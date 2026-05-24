@@ -44,7 +44,7 @@ def show_page():
         <div style='background-color:#FFF9C4; padding:20px; border-radius:10px; height:85%; margin-top: 30px;'>
             <b>🚗 직접 과거로 떠나볼까요?</b><br><br>
              영상을 잘 보았나요?<br>
-            이제 아래 버튼을 눌러 카카오맵을 켜고, 평택 시내나 우리 학교 주변의 도로, 건물이 10년, 15년 전에 어땠는지 직접 탐험해 보세요!
+            이제 아래 버튼을 눌러 카카오맵을 켜고, 안성 시내나 우리 학교 주변의 도로, 건물이 10년, 15년 전에 어땠는지 직접 탐험해 보세요!
         </div>
         """, unsafe_allow_html=True)
         st.link_button("카카오맵으로 탐험 가기 🗺️", "https://map.kakao.com/", use_container_width=True)
@@ -68,7 +68,7 @@ def show_page():
             if past_view and present_view:
                 if db_connected:
                     collection.insert_one({"type": "달라진모습", "username": current_student, "past": past_view, "present": present_view, "reason": change_reason, "timestamp": datetime.datetime.now()})
-                    st.success("🎉 평택의 변화된 모습이 멋지게 기록되었어요!")
+                    st.success("🎉 안성의 변화된 모습이 멋지게 기록되었어요!")
                     st.balloons()
             else:
                 st.warning("⚠️ 과거와 현재의 모습을 모두 적어주세요!")
@@ -76,5 +76,5 @@ def show_page():
     # ---------------------------------------------------------
     # 🤖 2. AI 보조교사 호출 (파일 맨 아래)
     # ---------------------------------------------------------
-    activity_desc = "이 화면은 카카오맵의 '로드뷰/타임머신' 기능을 활용하여 평택의 과거모습과 현재모습을 비교해보고, 달라진 점과 그 이유를 기록하는 곳입니다. 직접 탐험 후 아래 글쓰기 창에서 기록해야 합니다."
-    ai_teacher.show_ai_teacher(activity_name="활동 3-2. 평택의 달라진 모습", context_description=activity_desc)
+    activity_desc = "이 화면은 카카오맵의 '로드뷰/타임머신' 기능을 활용하여 안성의 과거모습과 현재모습을 비교해보고, 달라진 점과 그 이유를 기록하는 곳입니다. 직접 탐험 후 아래 글쓰기 창에서 기록해야 합니다."
+    ai_teacher.show_ai_teacher(activity_name="활동 3-2. 안성의 달라진 모습", context_description=activity_desc)
