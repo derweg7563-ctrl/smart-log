@@ -20,7 +20,7 @@ except Exception as e:
     st.error(f"🚨 DB 연결 에러: {e}")
 
 def show_page():
-    st.title("🔄 평택의 달라진 모습")
+    st.title("🔄 안성의 달라진 모습")
     st.info("💡 카카오맵 타임머신을 타고, 우리 동네가 어떻게 변했는지 직접 탐험해 보세요!")
 
     current_student = st.session_state.get('username', '학생')
