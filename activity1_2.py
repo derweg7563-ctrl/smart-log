@@ -154,6 +154,10 @@ def show_page():
                     st.error("DB가 연결되지 않았습니다.")
             else:
                 st.warning("⚠️ 사진을 올리고 내용도 함께 적어주세요!")
+                
+        # 새롭게 추가된 안성저장소 링크 버튼
+        st.write("") 
+        st.link_button("🏛️ 안성저장소 바로가기", "https://www.anseong.go.kr/archive/kor/index.do", use_container_width=True)
 
     # ---------------------------------------------------------
     # 🤖 6. AI 보조교사 호출 (맨 마지막에 딱 붙어있습니다!)
