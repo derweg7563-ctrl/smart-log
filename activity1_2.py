@@ -3,6 +3,7 @@ import os
 import datetime
 import base64
 from pymongo import MongoClient
+from streamlit_image_comparison import image_comparison
 
 # 👇 우리가 만든 AI 선생님 모듈 불러오기!
 import ai_teacher 
