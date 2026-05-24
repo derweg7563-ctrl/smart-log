@@ -129,12 +129,15 @@ def show_page():
                 st.error("⚠️ 날짜와 제목은 꼭 적어주세요!")
 
     # ---------------------------------------------------------
-    # 🌟 내가 만든 연표 보여주기 영역
+    # 🌟 내가 만든 연표 보여주기 영역 (정렬 기능 추가!)
     # ---------------------------------------------------------
     if len(st.session_state['my_secret_timeline']) > 0:
         st.markdown('<div class="sub-title">👇 내가 만든 멋진 연표</div>', unsafe_allow_html=True)
         
-        for item in st.session_state['my_secret_timeline']:
+        # 💡 [핵심 수정!] 날짜(date)를 기준으로 오름차순(오래된 순) 정렬합니다.
+        sorted_timeline = sorted(st.session_state['my_secret_timeline'], key=lambda x: x['date'])
+        
+        for item in sorted_timeline:
             with st.container(border=True):
                 st.markdown(f'<div class="timeline-date">{item["date"]} : {item["title"]}</div>', unsafe_allow_html=True)
                 st.write(item["desc"])
