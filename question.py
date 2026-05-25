@@ -6,6 +6,7 @@ def show_page():
         <div style='text-align: center; background-color: #F0F8FF; padding: 30px; border-radius: 20px; border: 3px dashed #BAE1FF;'>
             <h1 style='color: #0056b3;'>🗺️ 안성 탐험대에 오신 것을 환영합니다!</h1>
             <p style='font-size: 18px; color: #333;'>우리 동네 안성의 숨겨진 비밀과 학교의 역사를 찾아 떠나는 신나는 여행!</p>
+            <p style='font-size: 17px; color: #E65100; font-weight: bold; margin-top: 15px;'>확인이 끝나면 왼쪽 메뉴 선택 중 로그인이나 회원가입을 눌러 여행을 시작해요!</p>
         </div>
         <br>
     """, unsafe_allow_html=True)
