@@ -72,7 +72,7 @@ def generate_ai_desc(relic_name):
         return "앗! AI 선생님이 잠시 자리를 비웠어요."
 
 # ==========================================
-# 🏛️ 기능 2: 국립중앙박물관 유물 검색기
+# 🏛️ 기능 2: 국립중앙박물관 유물 검색기 (통신 에러 완벽 차단!)
 # ==========================================
 def search_museum_relics(keyword):
     url = 'http://www.emuseum.go.kr/openapi/relic/list' 
@@ -86,7 +86,8 @@ def search_museum_relics(keyword):
     }
     
     try:
-        response = requests.get(url, params=params)
+        # 10초 기다림 설정
+        response = requests.get(url, params=params, timeout=10)
         root = ET.fromstring(response.content)
         
         err_msg = root.findtext('.//returnAuthMsg') or root.findtext('.//errMsg')
@@ -118,8 +119,13 @@ def search_museum_relics(keyword):
             return {"empty": True, "raw": response.text}
             
         return results
+        
+    except requests.exceptions.RequestException:
+        # 💡 [핵심 수정] Timeout, ConnectionError 등 모든 인터넷 끊김 문제를 여기서 부드럽게 잡습니다!
+        return {"error": "박물관 서버가 지금 해외 접속을 막고 있거나, 너무 바빠서 문을 닫았어요. 잠시 후 다시 시도해 주세요! 😭", "raw": "Connection Error"}
     except Exception as e:
-        return {"error": str(e), "raw": "알 수 없는 에러 발생"}
+        # 그 외 알 수 없는 에러
+        return {"error": "박물관 자료를 정리하다가 알 수 없는 문제가 생겼어요.", "raw": str(e)}
 
 # ==========================================
 # 💻 화면 그리기 (show_page)
@@ -179,34 +185,31 @@ def show_page():
 
     # --- 탭 2: 국립중앙박물관 공공데이터 검색기 ---
     st.markdown("### 🏛️ 2. 국립중앙박물관 공식 유물 검색기")
-    st.info("실제 박물관에는 어떤 유물들이 있을까요? 궁금한 유물 이름(예: 맷돌, 백자)이나 지역(예: 안성 등)을 검색해 보세요!")
+    st.info("실제 박물관에는 어떤 유물들이 있을까요? 궁금한 유물 이름(예: 맷돌, 백자)이나 지역(예: 평택, 안성)을 검색해 보세요!")
 
     col_s1, col_s2 = st.columns([3, 1])
     with col_s1:
-        search_keyword = st.text_input("🔍 유물 검색어 입력", placeholder="예: 안성, 맷돌, 갓")
+        search_keyword = st.text_input("🔍 유물 검색어 입력", placeholder="예: 평택, 맷돌, 갓")
     with col_s2:
         st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
         search_btn = st.button("박물관 창고 열기 🚀", use_container_width=True)
 
-    # 💡 [핵심] 검색 버튼을 누르면 결과를 '기억 상자'에 저장합니다!
     if search_btn and search_keyword:
         with st.spinner('국립중앙박물관 서버에서 자료를 가져오고 있습니다... 🏃‍♂️'):
             st.session_state.museum_results = search_museum_relics(search_keyword)
-            # 새로운 검색을 하면 예전 AI 설명 기억도 깔끔하게 지웁니다.
             if "ai_explanations" in st.session_state:
                 del st.session_state["ai_explanations"]
 
-    # 💡 [핵심] 기억 상자에 결과가 남아있다면 화면이 지워지지 않고 계속 그려집니다!
     if "museum_results" in st.session_state and st.session_state.museum_results:
         museum_results = st.session_state.museum_results
         
-        # AI 설명을 저장할 특별한 기억 상자 준비
         if "ai_explanations" not in st.session_state:
             st.session_state.ai_explanations = {}
             
         if type(museum_results) is dict and "error" in museum_results:
-            st.error("🚨 박물관 서버가 선생님의 열쇠를 거절했습니다!")
-            st.warning(f"**거절 사유:** {museum_results['error']}")
+            # 💡 [여기도 중요] 튕겼을 때 에러 화면 대신 노란색 경고창을 예쁘게 띄워줍니다.
+            st.error("🚨 박물관 창고 문이 열리지 않았어요!")
+            st.warning(f"**이유:** {museum_results['error']}")
         elif type(museum_results) is dict and "empty" in museum_results:
             st.warning(f"'{search_keyword}'에 대한 박물관 검색 결과가 없습니다.")
         else:
@@ -224,14 +227,12 @@ def show_page():
                         st.markdown(f"**🏷️ 유물명:** {item['name']}")
                         
                         if item['desc'] == "설명이 등록되지 않았습니다.":
-                            # 💡 이미 기억 상자에 이 유물에 대한 AI 설명이 있다면 바로 보여주기!
                             if idx in st.session_state.ai_explanations:
                                 st.info(f"**🤖 AI 선생님:**\n\n{st.session_state.ai_explanations[idx]}")
                             else:
                                 st.markdown("📖 **설명:** 박물관 공식 설명이 없습니다.")
                                 if st.button(f"🤖 AI 선생님, 이게 뭐예요?", key=f"ai_btn_{idx}"):
                                     with st.spinner('AI가 똑똑한 설명을 뚝딱뚝딱 만들고 있어요... 🪄'):
-                                        # 설명을 만들어서 기억 상자에 쏙 넣고 화면을 새로고침합니다!
                                         ai_explanation = generate_ai_desc(item['name'])
                                         st.session_state.ai_explanations[idx] = ai_explanation
                                         st.rerun()
