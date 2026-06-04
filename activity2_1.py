@@ -179,11 +179,11 @@ def show_page():
 
     # --- 탭 2: 국립중앙박물관 공공데이터 검색기 ---
     st.markdown("### 🏛️ 2. 국립중앙박물관 공식 유물 검색기")
-    st.info("실제 박물관에는 어떤 유물들이 있을까요? 궁금한 유물 이름(예: 맷돌, 백자)이나 지역(예: 평택, 안성)을 검색해 보세요!")
+    st.info("실제 박물관에는 어떤 유물들이 있을까요? 궁금한 유물 이름(예: 맷돌, 백자)이나 지역(예: 안성 등)을 검색해 보세요!")
 
     col_s1, col_s2 = st.columns([3, 1])
     with col_s1:
-        search_keyword = st.text_input("🔍 유물 검색어 입력", placeholder="예: 평택, 맷돌, 갓")
+        search_keyword = st.text_input("🔍 유물 검색어 입력", placeholder="예: 안성, 맷돌, 갓")
     with col_s2:
         st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
         search_btn = st.button("박물관 창고 열기 🚀", use_container_width=True)
