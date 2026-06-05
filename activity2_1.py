@@ -72,11 +72,16 @@ def generate_ai_desc(relic_name):
         return "앗! AI 선생님이 잠시 자리를 비웠어요."
 
 # ==========================================
-# 🏛️ 기능 2: 국립중앙박물관 유물 검색기 (통신 에러 완벽 차단!)
+# 🏛️ 기능 2: 국립중앙박물관 유물 검색기 (브라우저 변장 마법 적용!)
 # ==========================================
 def search_museum_relics(keyword):
     url = 'http://www.emuseum.go.kr/openapi/relic/list' 
     my_key = st.secrets["museum"]["api_key"]
+    
+    # 💡 [핵심 해결책] 박물관 서버가 우리를 '일반 크롬 브라우저'로 착각하게 만드는 신분증입니다!
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
     
     params = {
         'serviceKey': my_key,
@@ -86,8 +91,8 @@ def search_museum_relics(keyword):
     }
     
     try:
-        # 10초 기다림 설정
-        response = requests.get(url, params=params, timeout=10)
+        # 💡 [핵심] 요청을 보낼 때 위에서 만든 가짜 신분증(headers)과 10초 대기(timeout)를 같이 적용합니다!
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         root = ET.fromstring(response.content)
         
         err_msg = root.findtext('.//returnAuthMsg') or root.findtext('.//errMsg')
@@ -120,11 +125,9 @@ def search_museum_relics(keyword):
             
         return results
         
-    except requests.exceptions.RequestException:
-        # 💡 [핵심 수정] Timeout, ConnectionError 등 모든 인터넷 끊김 문제를 여기서 부드럽게 잡습니다!
-        return {"error": "박물관 서버가 지금 해외 접속을 막고 있거나, 너무 바빠서 문을 닫았어요. 잠시 후 다시 시도해 주세요! 😭", "raw": "Connection Error"}
+    except requests.exceptions.RequestException as e:
+        return {"error": "박물관 서버가 지금 접속을 막고 있거나, 문을 닫았어요. 잠시 후 다시 시도해 주세요!", "raw": str(e)}
     except Exception as e:
-        # 그 외 알 수 없는 에러
         return {"error": "박물관 자료를 정리하다가 알 수 없는 문제가 생겼어요.", "raw": str(e)}
 
 # ==========================================
@@ -207,7 +210,6 @@ def show_page():
             st.session_state.ai_explanations = {}
             
         if type(museum_results) is dict and "error" in museum_results:
-            # 💡 [여기도 중요] 튕겼을 때 에러 화면 대신 노란색 경고창을 예쁘게 띄워줍니다.
             st.error("🚨 박물관 창고 문이 열리지 않았어요!")
             st.warning(f"**이유:** {museum_results['error']}")
         elif type(museum_results) is dict and "empty" in museum_results:
