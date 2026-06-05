@@ -10,6 +10,9 @@ try:
     client = init_connection()
     db = client["school_project"]
     users_collection = db["users"]
+    
+    # 👇 학생 작품이 저장된 컬렉션을 추가로 연결합니다 (앞선 코드의 student_timeline)
+    timeline_collection = db["student_timeline"] 
     db_connected = True
 except Exception as e:
     db_connected = False
@@ -42,7 +45,7 @@ def show_page(*args, **kwargs):
             with c1: st.write(idx + 1)
             with c2: st.write(f"**{student['username']}**")
             with c3:
-                if st.button("🗑️ 삭제", key=f"del_{student['username']}", help="이 학생의 계정을 삭제합니다."):
+                if st.button("🗑️ 삭제", key=f"del_user_{student['username']}", help="이 학생의 계정을 삭제합니다."):
                     users_collection.delete_one({"username": student["username"]})
                     st.success(f"'{student['username']}' 학생 계정이 삭제되었습니다.")
                     st.rerun()
@@ -50,7 +53,7 @@ def show_page(*args, **kwargs):
     st.markdown("<br><br>", unsafe_allow_html=True)
 
     # 🚀 [핵심 최적화 구간] 30명의 일지를 한 번에 실행하지 않고, 선택한 1명만 즉시 불러옵니다!
-    st.markdown("### 🎓 학생별 탐험 일지 (대시보드) 확인")
+    st.markdown("### 🎓 학생별 탐험 일지 (대시보드) 확인 및 작품 관리")
     
     if len(students) == 0:
         st.write("확인할 학생 기록이 없습니다.")
@@ -68,3 +71,30 @@ def show_page(*args, **kwargs):
             st.markdown(f"#### 📂 {selected_student} 학생의 탐험 일지")
             st.markdown("---")
             stu_dash.show_page(target_student=selected_student)
+            
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            
+            # 👇 4. [신규 추가] 선택한 학생의 개별 작품을 관리(삭제)하는 영역입니다.
+            st.markdown(f"#### 🛠️ {selected_student} 학생 작품 개별 삭제 관리")
+            st.info("💡 잘못 올린 작품이나 다시 작성해야 하는 단계를 개별적으로 삭제할 수 있습니다.")
+            
+            # 해당 학생이 업로드한 모든 기록을 DB에서 가져옵니다.
+            student_works = list(timeline_collection.find({"username": selected_student}))
+            
+            if len(student_works) == 0:
+                st.write("현재 저장된 작품 기록이 없습니다.")
+            else:
+                for work in student_works:
+                    # 저장될 때 사용한 단계(stage) 이름을 가져옵니다.
+                    stage_name = work.get("stage", "이름 없는 기록")
+                    
+                    wc1, wc2 = st.columns([4, 1])
+                    with wc1:
+                        st.write(f"📌 **{stage_name}** 활동 기록")
+                    with wc2:
+                        # 고유한 _id 값을 key로 사용하여 삭제 버튼이 겹치지 않게 합니다.
+                        if st.button("🗑️ 작품 삭제", key=f"del_work_{work['_id']}", help="해당 단계의 기록을 완전히 지웁니다."):
+                            timeline_collection.delete_one({"_id": work["_id"]})
+                            st.success(f"'{stage_name}' 기록이 삭제되었습니다. 학생이 다시 업로드할 수 있습니다.")
+                            st.rerun()
+                    st.markdown("---")
