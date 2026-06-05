@@ -106,8 +106,9 @@ def show_page():
         display_name = st.session_state.current_step.split("_")[1]
         st.subheader(f"📍 '{display_name}' 단계 기록하기")
         
-        memory_text = st.text_area("✨ 이 때의 나에게 하고 싶은 말이나 기억나는 점을 적어보세요!", height=100)
-        uploaded_file = st.file_uploader("📸 사진 파일을 선택해주세요.", type=["png", "jpg", "jpeg"], key="file_uploader_key")
+        # 💡 핵심 수정 부분: key 값에 st.session_state.current_step을 추가하여 단계별로 완전히 다른 입력창으로 인식하게 만듭니다!
+        memory_text = st.text_area("✨ 이 때의 나에게 하고 싶은 말이나 기억나는 점을 적어보세요!", height=100, key=f"text_{st.session_state.current_step}")
+        uploaded_file = st.file_uploader("📸 사진 파일을 선택해주세요.", type=["png", "jpg", "jpeg"], key=f"file_{st.session_state.current_step}")
 
         if st.button("🚀 내 발자국 영구 저장하기", type="primary"):
             if uploaded_file is not None and memory_text != "":
@@ -149,7 +150,6 @@ def show_page():
         if len(saved_stages) >= 5:
             st.divider()
             
-            # 💡 수정된 부분: 버튼을 화면 중앙에 아주 넓게 꽉 채워지도록 컬럼 비율을 [0.5, 4, 0.5]로 대폭 늘렸습니다!
             _, btn_col, _ = st.columns([0.5, 4, 0.5])
             with btn_col:
                 if st.button("🌟 나의 성장 과정", use_container_width=True):
