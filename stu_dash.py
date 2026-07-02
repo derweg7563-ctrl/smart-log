@@ -1,11 +1,11 @@
 import streamlit as st
 import base64
 from pymongo import MongoClient
-
+ 
 @st.cache_resource
 def init_connection():
     return MongoClient(st.secrets["mongo"]["uri"])
-
+ 
 try:
     client = init_connection()
     db = client["school_project"]
@@ -18,7 +18,7 @@ try:
 except Exception as e:
     db_connected = False
     st.error(f"🚨 DB 연결 에러: {e}")
-
+ 
 # 🎯 선생님이 '특정 학생(target_student)'의 이름을 넣어 호출할 수 있게 되었습니다!
 def show_page(target_student=None):
     st.markdown("""
@@ -44,20 +44,20 @@ def show_page(target_student=None):
         .memory-bubble { background-color: #f8f9fa; padding: 10px; border-radius: 10px; font-size: 0.9rem; color: #444; width: 180px; text-align: center; border: 2px dashed #ddd; word-break: keep-all; margin-top: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
         </style>
     """, unsafe_allow_html=True)
-
+ 
     current_student = target_student if target_student else st.session_state.get('username', '학생')
-
+ 
     st.markdown(f"""
         <div class="dash-header">
             <div class="dash-title">🎓 {current_student} 대원의 탐험 일지</div>
             <div class="dash-subtitle">지금까지 안성 탐험대에서 남긴 모든 발자국을 모아봤어요!</div>
         </div>
     """, unsafe_allow_html=True)
-
+ 
     if not db_connected:
         st.warning("⚠️ 데이터베이스에 연결할 수 없어 기록을 불러올 수 없습니다.")
         return
-
+ 
     # 🚀 [속도 개선 1] 점수 계산용: 무거운 데이터를 가져오지 않고 개수(count)만 빠르게 셉니다.
     count_1_1 = col_1_1.count_documents({"username": current_student})
     count_1_2 = col_1_2.count_documents({"username": current_student})
@@ -66,7 +66,7 @@ def show_page(target_student=None):
     count_3_1 = col_history.count_documents({"username": current_student, "type": "옛이야기"})
     count_3_2 = col_history.count_documents({"username": current_student, "type": "달라진모습"})
     count_3_3 = col_history.count_documents({"username": current_student, "type": "지역명유래"})
-
+ 
     rec_1_3_count = 0 if target_student else len(st.session_state.get('my_secret_timeline', []))
     total_records = count_1_1 + count_1_2 + rec_1_3_count + count_2_1 + count_2_3 + count_3_1 + count_3_2 + count_3_3
     
@@ -82,7 +82,7 @@ def show_page(target_student=None):
     else:
         feedback = "👀 아직 남겨진 발자국이 없어요. 첫 번째 탐험을 시작해 보세요!"
         progress_val = 0
-
+ 
     st.markdown(f"""
         <div class="score-card">
             <div style="font-size: 3rem; margin-bottom: 10px;">🏆</div>
@@ -91,7 +91,7 @@ def show_page(target_student=None):
         </div>
     """, unsafe_allow_html=True)
     st.progress(progress_val)
-
+ 
     # 🚀 [속도 개선 2] 화면 표시용: 최신순(_id 내림차순)으로 딱 10개까지만 가져옵니다.
     rec_1_1 = list(col_1_1.find({"username": current_student}).sort("_id", -1).limit(20))
     rec_1_2 = list(col_1_2.find({"username": current_student}).sort("_id", -1).limit(10))
@@ -100,13 +100,13 @@ def show_page(target_student=None):
     rec_3_1 = list(col_history.find({"username": current_student, "type": "옛이야기"}).sort("_id", -1).limit(10))
     rec_3_2 = list(col_history.find({"username": current_student, "type": "달라진모습"}).sort("_id", -1).limit(10))
     rec_3_3 = list(col_history.find({"username": current_student, "type": "지역명유래"}).sort("_id", -1).limit(10))
-
+ 
     # =========================================================
     # 📘 [1단원] 어제와 오늘의 흐름 따라가기
     # =========================================================
     st.markdown('<div class="section-title">📘 1단계: 어제와 오늘의 흐름 따라가기</div>', unsafe_allow_html=True)
     tab1_1, tab1_2, tab1_3 = st.tabs(["👣 나의 발자국", "🏫 학교 발자국", "⏳ 발자국 연표"])
-
+ 
     with tab1_1:
         if count_1_1 == 0:
             st.info("아직 '나의 발자국 살펴보기' 활동을 기록하지 않았어요.")
@@ -131,7 +131,7 @@ def show_page(target_student=None):
                     <div class="memory-bubble">{content_text}</div>
                 </div>
                 '''
-
+ 
             c1, a1, c2, a2, c3 = st.columns([1, 0.2, 1, 0.2, 1])
             with c1: st.markdown(get_photo_box(saved_stages.get("1단계_태어났을때"), "box-1", "내가<br>태어났을 때"), unsafe_allow_html=True)
             with a1: st.markdown('<div class="arrow">→</div>', unsafe_allow_html=True)
@@ -146,7 +146,7 @@ def show_page(target_student=None):
             with a3: st.markdown('<div class="arrow">←</div>', unsafe_allow_html=True)
             with c5: st.markdown(get_photo_box(saved_stages.get("5단계_미래의나"), "box-5", "1년 후의<br>내 모습"), unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
-
+ 
     with tab1_2:
         if count_1_2 == 0:
             st.info("아직 '학교 발자국 알아보기' 활동을 기록하지 않았어요.")
@@ -160,7 +160,7 @@ def show_page(target_student=None):
                         img_data = base64.b64decode(item["image_base64"])
                         st.image(img_data, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-
+ 
     with tab1_3:
         if target_student:
             st.warning("🔒 1-3 발자국 연표는 학생 개인 컴퓨터에만 임시로 저장되는 '비밀 일기'이므로 선생님 화면에서는 보이지 않습니다.")
@@ -176,20 +176,33 @@ def show_page(target_student=None):
                         st.write(item["desc"])
                         if item["image"] != "":
                             st.markdown(f'<img src="data:image/jpeg;base64,{item["image"]}" style="max-width: 100%; border-radius: 10px; margin-top: 10px;">', unsafe_allow_html=True)
-
+ 
     # =========================================================
     # 📗 [2단원] 디지털에서 만나는 옛 모습
     # =========================================================
     st.markdown('<div class="section-title sec2">📗 2단계: 디지털에서 만나는 옛 모습</div>', unsafe_allow_html=True)
     tab2_1, tab2_2, tab2_3 = st.tabs(["🏺 옛 물건 살펴보기", "🕵️‍♂️ AI 유물 탐정", "🖼️ 애장품 전시회"])
-
+ 
     with tab2_1:
-        if count_2_1 == 0: st.info("아직 '옛 물건 살펴보기' 활동을 기록하지 않았어요.")
-        else: st.write("기록이 있습니다.") 
-
+        if count_2_1 == 0:
+            st.info("아직 '옛 물건 살펴보기' 활동을 기록하지 않았어요.")
+        else:
+            # ✅ [수정된 부분] 기존에는 "기록이 있습니다."만 찍고 끝났는데,
+            # AI 분석 내용 + 나의 생각(thought) + 사진을 실제로 보여주도록 변경했습니다.
+            for item in rec_2_1:
+                with st.container():
+                    st.markdown('<div class="record-card">', unsafe_allow_html=True)
+                    st.markdown('<span class="record-tag">옛 물건 살펴보기</span>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="record-content"><b>🤖 AI 분석:</b><br>{item.get("content", "")}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="record-content" style="margin-top:10px;"><b>✍️ 나의 생각:</b> "{item.get("thought", "")}"</div>', unsafe_allow_html=True)
+                    if "image_base64" in item and item["image_base64"]:
+                        img_data = base64.b64decode(item["image_base64"])
+                        st.image(img_data, use_container_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+ 
     with tab2_2:
         st.info("💡 AI 유물 탐정님과의 즐거운 대화는 탐험대원님의 마음속 지식으로 단단하게 저장되었어요!")
-
+ 
     with tab2_3:
         if count_2_3 == 0:
             st.info("아직 '우리 반 애장품 전시회'에 출품한 물건이 없어요.")
@@ -205,13 +218,13 @@ def show_page(target_student=None):
                         img_data = base64.b64decode(item["image_base64"])
                         st.image(img_data, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-
+ 
     # =========================================================
     # 📙 [3단원] 세대공감, 달라진 모습
     # =========================================================
     st.markdown('<div class="section-title sec3">📙 3단계: 세대공감, 달라진 모습</div>', unsafe_allow_html=True)
     tab3_1, tab3_2, tab3_3 = st.tabs(["📖 옛이야기 탐험", "🔄 달라진 모습", "🏷️ 땅 이름 비밀"])
-
+ 
     with tab3_1:
         if count_3_1 == 0:
             st.info("아직 '안성의 옛이야기 탐험' 활동을 기록하지 않았어요.")
@@ -223,7 +236,7 @@ def show_page(target_student=None):
                     st.markdown(f'<div class="record-title">📖 {item.get("title", "")}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="record-content">{item.get("content", "")}</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-
+ 
     with tab3_2:
         if count_3_2 == 0:
             st.info("아직 '안성의 달라진 모습' 활동을 기록하지 않았어요.")
@@ -236,7 +249,7 @@ def show_page(target_student=None):
                     st.markdown(f'<div class="record-content"><b>🏙️ 현재:</b> {item.get("present", "")}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="record-content" style="margin-top:10px;"><b>🤔 달라진 이유:</b> {item.get("reason", "")}</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-
+ 
     with tab3_3:
         if count_3_3 == 0:
             st.info("아직 '안성의 땅 이름 비밀 찾기' 활동을 기록하지 않았어요.")
