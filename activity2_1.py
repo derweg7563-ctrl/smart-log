@@ -177,9 +177,11 @@ def show_page():
                         st.error("🚨 데이터베이스 연결에 실패해서 저장할 수 없어요. 잠시 후 다시 시도하거나 선생님(관리자)께 알려주세요.")
                     else:
                         encoded_image = base64.b64encode(uploaded_file.getvalue()).decode('utf-8')
+                        # ✅ [수정된 부분] AI 분석 내용(content)은 학생이 직접 작성한 게 아니고
+                        # 저장 공간만 차지하므로 DB에는 저장하지 않습니다.
+                        # (화면에는 st.session_state.analysis_result로 그때그때 보여주는 것으로 충분해요.)
                         record = {
                             "username": current_student,
-                            "content": st.session_state.analysis_result,
                             "thought": student_thought,
                             "image_base64": encoded_image,
                             "timestamp": datetime.datetime.now()
