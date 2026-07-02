@@ -6,21 +6,21 @@ import xml.etree.ElementTree as ET
 from pymongo import MongoClient
 from PIL import Image
 import io
-
+ 
 # 👇 1. AI 보조교사 모듈 불러오기
 import ai_teacher
-
+ 
 # 구글 생성형 AI 패키지
 try:
     import google.generativeai as genai
 except ImportError:
     st.error("🚨 `google-generativeai` 패키지가 필요합니다.")
-
+ 
 # DB 연결
 @st.cache_resource
 def init_connection():
     return MongoClient(st.secrets["mongo"]["uri"])
-
+ 
 try:
     client = init_connection()
     db = client["school_project"]
@@ -29,13 +29,13 @@ try:
 except Exception as e:
     db_connected = False
     st.error(f"🚨 DB 연결 에러: {e}")
-
+ 
 # 구글 AI 설정
 try:
     genai.configure(api_key=st.secrets["google"]["api_key"])
 except Exception as e:
     st.error("🚨 secrets.toml 파일에 구글 열쇠가 없습니다!")
-
+ 
 # ==========================================
 # 🔍 기능 1: AI 유물 사진 분석기
 # ==========================================
@@ -48,7 +48,7 @@ def analyze_artifact(image):
         학생이 사진을 하나 올렸어. 이 사진 속 물건이 무엇인지 분석해서, 
         초등학교 3학년 학생이 이해하기 쉽게 존댓말로 다음 양식에 맞춰서 설명해줘.
         이모지도 듬뿍 넣어줘!
-
+ 
         * **이름:** (물건의 이름)
         * **용도:** (어디에 쓰던 물건인가요?)
         * **특징:** (어떤 특징이 있나요? 2~3문장으로 재미있게)
@@ -57,7 +57,7 @@ def analyze_artifact(image):
         return response.text
     except Exception as e:
         return f"앗! AI 분석 중 에러가 났어요. (오류: {e})"
-
+ 
 # ==========================================
 # 💡 기능 1-2: AI 유물 이름 설명기
 # ==========================================
@@ -70,7 +70,7 @@ def generate_ai_desc(relic_name):
         return response.text
     except Exception as e:
         return "앗! AI 선생님이 잠시 자리를 비웠어요."
-
+ 
 # ==========================================
 # 🏛️ 기능 2: 국립중앙박물관 유물 검색기 (브라우저 변장 마법 적용!)
 # ==========================================
@@ -102,7 +102,7 @@ def search_museum_relics(keyword):
         result_code = root.findtext('.//resultCode')
         if result_code and result_code != '0000':
             return {"error": f"API 에러코드 {result_code}", "raw": response.text}
-
+ 
         data_nodes = root.findall('.//data')
         results = []
         
@@ -129,20 +129,20 @@ def search_museum_relics(keyword):
         return {"error": "박물관 서버가 지금 접속을 막고 있거나, 문을 닫았어요. 잠시 후 다시 시도해 주세요!", "raw": str(e)}
     except Exception as e:
         return {"error": "박물관 자료를 정리하다가 알 수 없는 문제가 생겼어요.", "raw": str(e)}
-
+ 
 # ==========================================
 # 💻 화면 그리기 (show_page)
 # ==========================================
 def show_page():
     st.title("🔍 옛 물건 살펴보기")
     current_student = st.session_state.get('username', '학생')
-
+ 
     # --- 탭 1: AI 사진 분석기 ---
     st.markdown("### 📸 1. 내가 찾은 옛 물건 AI 분석하기")
     st.success("💡 박물관에서 본 유물이나 집에 있는 옛날 물건 사진을 올리면 AI 탐정이 분석해 줍니다.")
-
+ 
     uploaded_file = st.file_uploader("옛 물건 사진 업로드", type=['png', 'jpg', 'jpeg'], key="u_file_2_1")
-
+ 
     if uploaded_file is not None:
         image = Image.open(uploaded_file)
         st.image(image, caption='내가 찾은 옛 물건', width=400)
@@ -150,16 +150,16 @@ def show_page():
         if "analysis_result" not in st.session_state:
             st.session_state.analysis_result = ""
             st.session_state.analyzed_file = ""
-
+ 
         if st.session_state.analyzed_file != uploaded_file.name:
             st.session_state.analysis_result = ""
             st.session_state.analyzed_file = uploaded_file.name
-
+ 
         if st.button("AI 유물 분석 시작 ✨", use_container_width=True):
             with st.spinner('AI 탐정이 유물을 꼼꼼히 관찰하고 있습니다... 🔎'):
                 st.session_state.analysis_result = analyze_artifact(image)
                 st.rerun()
-
+ 
         if st.session_state.analysis_result:
             st.info(st.session_state.analysis_result)
             
@@ -168,7 +168,14 @@ def show_page():
                 student_thought = st.text_area("나의 생각 적기", placeholder="예: 맷돌의 손잡이 이름이 어처구니라니 신기하다!")
                 
                 if st.form_submit_button("내 발자국(대시보드)에 저장하기 🚀", use_container_width=True):
-                    if student_thought and db_connected:
+                    # ✅ [수정된 부분] 예전에는 "생각 안 적었을 때"와 "DB 연결 실패"를
+                    # 똑같이 "생각을 적어주세요"로 뭉뚱그려서, 원인을 알기 어려웠습니다.
+                    # 이제 두 경우를 나눠서 정확한 안내가 뜨도록 했습니다.
+                    if not student_thought:
+                        st.warning("⚠️ 나의 생각을 한 줄이라도 적어주세요!")
+                    elif not db_connected:
+                        st.error("🚨 데이터베이스 연결에 실패해서 저장할 수 없어요. 잠시 후 다시 시도하거나 선생님(관리자)께 알려주세요.")
+                    else:
                         encoded_image = base64.b64encode(uploaded_file.getvalue()).decode('utf-8')
                         record = {
                             "username": current_student,
@@ -180,29 +187,27 @@ def show_page():
                         collection.insert_one(record)
                         st.success("🎉 기록이 내 대시보드에 멋지게 저장되었어요!")
                         st.balloons()
-                    else:
-                        st.warning("⚠️ 나의 생각을 한 줄이라도 적어주세요!")
-
+ 
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     st.markdown("---")
-
+ 
     # --- 탭 2: 국립중앙박물관 공공데이터 검색기 ---
     st.markdown("### 🏛️ 2. 국립중앙박물관 공식 유물 검색기")
     st.info("실제 박물관에는 어떤 유물들이 있을까요? 궁금한 유물 이름(예: 맷돌, 백자)이나 지역(예: 안성 등)을 검색해 보세요!")
-
+ 
     col_s1, col_s2 = st.columns([3, 1])
     with col_s1:
         search_keyword = st.text_input("🔍 유물 검색어 입력", placeholder="예: 안성, 맷돌, 갓")
     with col_s2:
         st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
         search_btn = st.button("박물관 창고 열기 🚀", use_container_width=True)
-
+ 
     if search_btn and search_keyword:
         with st.spinner('국립중앙박물관 서버에서 자료를 가져오고 있습니다... 🏃‍♂️'):
             st.session_state.museum_results = search_museum_relics(search_keyword)
             if "ai_explanations" in st.session_state:
                 del st.session_state["ai_explanations"]
-
+ 
     if "museum_results" in st.session_state and st.session_state.museum_results:
         museum_results = st.session_state.museum_results
         
@@ -240,7 +245,7 @@ def show_page():
                                         st.rerun()
                         else:
                             st.markdown(f"**📖 설명:** {item['desc']}")
-
+ 
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     
     # ---------------------------------------------------------
