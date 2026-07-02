@@ -1,3 +1,4 @@
+
 import streamlit as st
 import base64
 from pymongo import MongoClient
@@ -188,13 +189,13 @@ def show_page(target_student=None):
             st.info("아직 '옛 물건 살펴보기' 활동을 기록하지 않았어요.")
         else:
             # ✅ [수정된 부분] 기존에는 "기록이 있습니다."만 찍고 끝났는데,
-            # AI 분석 내용 + 나의 생각(thought) + 사진을 실제로 보여주도록 변경했습니다.
+            # 나의 생각(thought) + 사진을 실제로 보여주도록 변경했습니다.
+            # (AI 분석 내용은 학생이 작성한 게 아니라서 더 이상 DB에 저장하지 않으므로 표시하지 않습니다.)
             for item in rec_2_1:
                 with st.container():
                     st.markdown('<div class="record-card">', unsafe_allow_html=True)
                     st.markdown('<span class="record-tag">옛 물건 살펴보기</span>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="record-content"><b>🤖 AI 분석:</b><br>{item.get("content", "")}</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="record-content" style="margin-top:10px;"><b>✍️ 나의 생각:</b> "{item.get("thought", "")}"</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="record-content"><b>✍️ 나의 생각:</b> "{item.get("thought", "")}"</div>', unsafe_allow_html=True)
                     if "image_base64" in item and item["image_base64"]:
                         img_data = base64.b64decode(item["image_base64"])
                         st.image(img_data, use_container_width=True)
