@@ -224,6 +224,14 @@ else:
                 st.session_state.pop("museum_results", None)
                 st.session_state.pop("ai_explanations", None)
  
+            # ✅ [추가된 부분] AI 유물 탐정(2_2) 페이지에 "새로" 들어올 때
+            # 이전 채팅 기록을 초기화합니다.
+            # - messages_2_2: 화면에 보이는 채팅 말풍선 기록
+            # - gemini_chat: 구글 AI가 이전 대화를 기억하는 세션 (같이 지워야 새 대화로 시작됨)
+            if page == "2_2":
+                st.session_state.pop("messages_2_2", None)
+                st.session_state.pop("gemini_chat", None)
+ 
             st.session_state.previous_page = page
  
         if page == "main": activity.show_page()
@@ -237,3 +245,4 @@ else:
         elif page == "3_2": activity3_2.show_page()
         elif page == "3_3": activity3_3.show_page()
         elif page == "stu_dash": stu_dash.show_page()
+ 
