@@ -176,14 +176,13 @@ def show_page():
                     elif not db_connected:
                         st.error("🚨 데이터베이스 연결에 실패해서 저장할 수 없어요. 잠시 후 다시 시도하거나 선생님(관리자)께 알려주세요.")
                     else:
-                        encoded_image = base64.b64encode(uploaded_file.getvalue()).decode('utf-8')
-                        # ✅ [수정된 부분] AI 분석 내용(content)은 학생이 직접 작성한 게 아니고
-                        # 저장 공간만 차지하므로 DB에는 저장하지 않습니다.
-                        # (화면에는 st.session_state.analysis_result로 그때그때 보여주는 것으로 충분해요.)
+                        # ✅ [수정된 부분] AI 분석 내용(content)과 사진(image_base64)은 저장하지 않습니다.
+                        # - AI 분석: 학생이 직접 작성한 게 아니고 저장 공간만 차지함
+                        # - 사진: 저작권 문제가 생길 수 있어 DB에 보관하지 않음
+                        # 학생이 직접 쓴 '나의 생각'만 저장합니다.
                         record = {
                             "username": current_student,
                             "thought": student_thought,
-                            "image_base64": encoded_image,
                             "timestamp": datetime.datetime.now()
                         }
                         collection.insert_one(record)
