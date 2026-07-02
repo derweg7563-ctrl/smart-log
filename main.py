@@ -4,46 +4,46 @@ import os
 import base64
 from pymongo import MongoClient
 import streamlit.components.v1 as components 
-
+ 
 import teacher_page, activity, question
 import activity1_1, activity1_2, activity1_3
 import activity2_1, activity2_2, activity2_3
 import activity3_1, activity3_2, activity3_3
 import stu_dash
-
+ 
 st.set_page_config(page_title="SMART-LOG 디지털 역사 기록장", layout="wide")
-
+ 
 @st.cache_resource
 def init_connection():
     try: return MongoClient(st.secrets["mongo"]["uri"])
     except: return None
-
+ 
 client = init_connection()
 db_connected = client is not None
 if db_connected:
     db = client["school_project"]; users_collection = db["users"]
-
+ 
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "username" not in st.session_state: st.session_state.username = ""
 if "role" not in st.session_state: st.session_state.role = ""
 if "current_page" not in st.session_state: st.session_state.current_page = "main"
 if "show_question" not in st.session_state: st.session_state.show_question = False
 if "previous_page" not in st.session_state: st.session_state.previous_page = "main"
-
+ 
 for i in range(1, 4):
     if f"menu{i}_open" not in st.session_state: st.session_state[f"menu{i}_open"] = False
-
+ 
 def go_to(page_name): st.session_state.current_page = page_name
 def toggle_menu(menu_num): st.session_state[f"menu{menu_num}_open"] = not st.session_state[f"menu{menu_num}_open"]
 def reset_question(): st.session_state.show_question = False
-
+ 
 # ======== 💡 현재 페이지인지 확인해서 디자인을 바꿔주는 마법의 함수 ========
 def get_hook(page_name, default_hook="sub-menu-hook"):
     if st.session_state.current_page == page_name:
         return "<span class='active-menu-hook'></span>"
     return f"<span class='{default_hook}'></span>"
 # ============================================================================
-
+ 
 st.markdown("""
     <style>
     div.element-container:has(.login-btn-hook) + div.element-container button,
@@ -60,7 +60,7 @@ st.markdown("""
     /* ============================================================================ */
     </style>
 """, unsafe_allow_html=True)
-
+ 
 def set_bg_and_point(bg_file, point_file):
     if os.path.exists(bg_file):
         with open(bg_file, "rb") as f: bg_encoded = base64.b64encode(f.read()).decode()
@@ -80,7 +80,7 @@ def set_bg_and_point(bg_file, point_file):
             <img src="data:image/png;base64,{point_encoded}" class="marker-base marker-right">
             """
         st.markdown(f"{point_html}<style>.stApp {{ background-image: url('data:image/png;base64,{bg_encoded}'); background-size: cover; background-position: center bottom !important; background-repeat: no-repeat; background-attachment: fixed; }}</style>", unsafe_allow_html=True)
-
+ 
 if not st.session_state.logged_in:
     st.sidebar.markdown("<div style='text-align:center; font-size:1.6rem; font-weight:700; color:#31333F; margin-bottom:1rem;'>📖 학습 안내 📖</div>", unsafe_allow_html=True)
     
@@ -112,11 +112,11 @@ if not st.session_state.logged_in:
             전체 학습을 위해<br>꼭 확인하세요
         </div>
     """, unsafe_allow_html=True)
-
+ 
     st.sidebar.markdown("<span class='q-btn-hook'></span>", unsafe_allow_html=True)
     if st.sidebar.button("👉 전체 학습 안내 보기", use_container_width=True):
         st.session_state.show_question = True; st.rerun()
-
+ 
     if st.session_state.show_question:
         question.show_page()  
     else:
@@ -125,7 +125,7 @@ if not st.session_state.logged_in:
         
 # 수정 후 (복사해서 덮어쓰세요!)
         st.markdown('<h1 style="text-align:center; color:white; text-shadow:2px 2px 4px black; margin-bottom: 30px;">걸어온 길, 스마트 로그<br>발자국으로 되짚다</h1>', unsafe_allow_html=True)
-
+ 
         if menu == "회원가입":
             st.subheader("📝 학생 회원가입")
             new_user = st.text_input("아이디(ID)", key="reg_id")
@@ -148,10 +148,10 @@ if not st.session_state.logged_in:
                     if match:
                         st.session_state.update({"logged_in": True, "username": user, "role": "학생"}); st.rerun()
                     else: st.error("정보가 틀렸습니다.")
-
+ 
 else:
     st.markdown("<style>.stApp { background-image: none !important; background-color: #ffffff; } .block-container { max-width: 1200px !important; margin: 0 auto !important; padding: 2rem !important; box-shadow: none !important; }</style>", unsafe_allow_html=True)
-
+ 
     st.sidebar.markdown("<div style='text-align:center; color:#2E7D32; font-weight:bold; font-size:30px;'>SMART-LOG 발자국</div>", unsafe_allow_html=True)
     
     role_label = "👨‍🏫 관리자" if st.session_state.role == "선생님" else "👩‍🎓 학생"
@@ -168,7 +168,7 @@ else:
     st.sidebar.markdown("<div style='text-align:center; font-weight:bold; font-size:20px;'>🚀 어떤 활동을 해볼까요?</div>", unsafe_allow_html=True)
     st.sidebar.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
     st.sidebar.markdown("<div style='font-size:20px; font-weight:bold; margin-bottom:10px;'>활동 소개</div>", unsafe_allow_html=True)
-
+ 
     st.sidebar.markdown("<span class='menu1-hook'></span>", unsafe_allow_html=True)
     st.sidebar.button("어제와 오늘의 흐름 따라가기", on_click=toggle_menu, args=(1,), use_container_width=True)
     if st.session_state.menu1_open:
@@ -178,7 +178,7 @@ else:
         st.sidebar.button("학교 발자국 알아보기", on_click=go_to, args=("1_2",), key="btn1_2", use_container_width=True)
         st.sidebar.markdown(get_hook("1_3"), unsafe_allow_html=True)
         st.sidebar.button("발자국 속 연표 만들기", on_click=go_to, args=("1_3",), key="btn1_3", use_container_width=True)
-
+ 
     st.sidebar.markdown("<span class='menu2-hook'></span>", unsafe_allow_html=True)
     st.sidebar.button("디지털에서 만나는 옛 모습", on_click=toggle_menu, args=(2,), use_container_width=True)
     if st.session_state.menu2_open:
@@ -188,7 +188,7 @@ else:
         st.sidebar.button("AI 유물 탐정이 되어보기", on_click=go_to, args=("2_2",), key="btn2_2", use_container_width=True)
         st.sidebar.markdown(get_hook("2_3"), unsafe_allow_html=True)
         st.sidebar.button("우리 반 애장품 전시회", on_click=go_to, args=("2_3",), key="btn2_3", use_container_width=True)
-
+ 
     st.sidebar.markdown("<span class='menu3-hook'></span>", unsafe_allow_html=True)
     st.sidebar.button("세대공감, 달라진 모습", on_click=toggle_menu, args=(3,), use_container_width=True)
     if st.session_state.menu3_open:
@@ -198,16 +198,16 @@ else:
         st.sidebar.button("안성의 달라진 모습", on_click=go_to, args=("3_2",), key="btn3_2", use_container_width=True)
         st.sidebar.markdown(get_hook("3_3"), unsafe_allow_html=True)
         st.sidebar.button("안성의 땅 이름 비밀 찾기", on_click=go_to, args=("3_3",), key="btn3_3", use_container_width=True)
-
+ 
     st.sidebar.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
-
+ 
     # 메인화면과 대시보드 버튼에도 색상 변경 마법 적용!
     st.sidebar.markdown(get_hook("main", "home-btn-hook"), unsafe_allow_html=True)
     st.sidebar.button("🏠 메인 화면으로 돌아가기", on_click=go_to, args=("main",), use_container_width=True)
-
+ 
     st.sidebar.markdown(get_hook("stu_dash", "sub-menu-hook"), unsafe_allow_html=True)
     st.sidebar.button("📊 나의 활동 기록 보기", on_click=go_to, args=("stu_dash",), use_container_width=True)
-
+ 
     if st.session_state.role == "선생님": 
         teacher_page.show_page()
     else:
@@ -215,8 +215,17 @@ else:
         if page != st.session_state.previous_page:
             scroll_js = """<script>var mainContent = window.parent.document.querySelector('section.main'); if (mainContent) { mainContent.scrollTo(0, 0); } window.parent.scrollTo(0, 0);</script>"""
             components.html(scroll_js, height=0)
+ 
+            # ✅ [추가된 부분] 옛 물건 검색기(2_1) 페이지에 "새로" 들어올 때만
+            # 이전 박물관 검색 결과와 AI 설명 캐시를 초기화합니다.
+            # (같은 페이지 안에서 검색 버튼을 눌러 다시 그려지는 경우는 여기 안 걸리므로
+            #  방금 검색한 결과가 지워지지 않습니다.)
+            if page == "2_1":
+                st.session_state.pop("museum_results", None)
+                st.session_state.pop("ai_explanations", None)
+ 
             st.session_state.previous_page = page
-
+ 
         if page == "main": activity.show_page()
         elif page == "1_1": activity1_1.show_page()
         elif page == "1_2": activity1_2.show_page()
