@@ -169,13 +169,10 @@ def show_page(target_student=None):
             if len(my_timeline) == 0:
                 st.info("아직 나만의 비밀 연표를 만들지 않았어요.")
             else:
-                st.success("🔒 이 연표는 나에게만 보이는 비밀 연표입니다.")
-                for item in my_timeline:
-                    with st.container(border=True):
-                        st.markdown(f'**{item["date"]} : {item["title"]}**')
-                        st.write(item["desc"])
-                        if item["image"] != "":
-                            st.markdown(f'<img src="data:image/jpeg;base64,{item["image"]}" style="max-width: 100%; border-radius: 10px; margin-top: 10px;">', unsafe_allow_html=True)
+                # ✅ [수정된 부분] 비밀 연표는 서버에 저장되지 않는 개인 기록이므로,
+                # 대시보드에서는 내용을 보여주지 않고 완료 문구만 표시합니다.
+                # (성실도 점수에는 위의 rec_1_3_count로 계속 포함됩니다.)
+                st.success("🌸 나의 즐거운 한 학기를 되돌아보며 정리하였어요")
  
     # =========================================================
     # 📗 [2단원] 디지털에서 만나는 옛 모습
