@@ -138,7 +138,7 @@ def show_page():
                 <div class="sub">(클릭하면 새 창이 열려요)</div>
             </a>
         """, unsafe_allow_html=True)
-        st.markdown('<div class="video-desc">🏛️ 안성저장소를 통해<br>학교 발자국 알아보기</div>', unsafe_allow_html=True)
+        st.markdown('<div class="video-desc" style="margin-top: 33px;">🏛️ 안성저장소를 통해<br>학교 발자국 알아보기</div>', unsafe_allow_html=True)
  
     st.write("---")
  
