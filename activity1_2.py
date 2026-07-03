@@ -102,8 +102,27 @@ def show_page():
     st.write("") 
  
     # ✅ [수정된 부분] 2칸 → 3칸으로 변경하고,
-    # 세 번째 칸에 '안성저장소 바로가기' 버튼을 배치했습니다.
-    # (기존에 맨 아래 저장 버튼 밑에 있던 안성저장소 버튼은 여기로 이동)
+    # 세 번째 칸에 '안성저장소 바로가기'를 유튜브 영상과 똑같은 16:9 비율의
+    # 큰 카드형 링크로 배치했습니다. (aspect-ratio 덕분에 영상과 높이가 항상 같아서
+    # 아래 설명 문구 세로줄이 자동으로 통일됩니다.)
+    st.markdown("""
+        <style>
+        .archive-card {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            aspect-ratio: 16 / 9; width: 100%;
+            background: linear-gradient(135deg, #E8F0FE, #F8F9FA);
+            border: 3px solid #BAE1FF; border-radius: 15px;
+            text-decoration: none !important;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        .archive-card:hover { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,0.15); border-color: #5A72A0; }
+        .archive-card .icon { font-size: 3.5rem; margin-bottom: 10px; }
+        .archive-card .label { font-size: 1.2rem; font-weight: 900; color: #5A72A0; text-align: center; line-height: 1.4; }
+        .archive-card .sub { font-size: 0.9rem; color: #888; margin-top: 8px; }
+        </style>
+    """, unsafe_allow_html=True)
+ 
     col1, col2, col3 = st.columns(3)
     with col1:
         st.video("https://youtu.be/rCxpWNuwsrY")
@@ -112,7 +131,13 @@ def show_page():
         st.video("https://www.youtube.com/watch?v=zxmOUGwIRgk&t=1s")
         st.markdown('<div class="video-desc">📌 학교 게시판을 통해<br>학교 발자국 알아보기</div>', unsafe_allow_html=True)
     with col3:
-        st.link_button("🏛️ 안성저장소 바로가기 (새 창 열림)", "https://www.anseong.go.kr/archive/kor/index.do", use_container_width=True)
+        st.markdown("""
+            <a href="https://www.anseong.go.kr/archive/kor/index.do" target="_blank" class="archive-card">
+                <div class="icon">🏛️</div>
+                <div class="label">안성저장소<br>바로가기</div>
+                <div class="sub">(클릭하면 새 창이 열려요)</div>
+            </a>
+        """, unsafe_allow_html=True)
         st.markdown('<div class="video-desc">🏛️ 안성저장소를 통해<br>학교 발자국 알아보기</div>', unsafe_allow_html=True)
  
     st.write("---")
