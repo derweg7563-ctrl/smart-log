@@ -123,8 +123,8 @@ if not st.session_state.logged_in:
         set_bg_and_point("background.png", "point.png")
         st.markdown("""<style>.block-container { background-color: rgba(255,255,255,0.85) !important; padding: 3rem !important; border-radius: 30px !important; margin-top: 15vh !important; max-width: 500px !important; margin-left: auto; margin-right: 5vw; }</style>""", unsafe_allow_html=True)
         
-        # ======== 💡 [추가] 적용학년 문구 (제목과 같은 폰트, 검은색, 오른쪽 정렬, 크기 50%) ========
-        st.markdown('<h1 style="text-align:right; color:black; font-size:1rem; margin-bottom:5px;">적용학년 : 초등 3학년</h1>', unsafe_allow_html=True)
+        # ======== 💡 [추가] 대상학년 문구 (제목과 같은 폰트, 검은색, 오른쪽 정렬, 크기 50%) ========
+        st.markdown('<h1 style="text-align:right; color:black; font-size:1rem; margin-bottom:5px;">대상학년 : 초등 3학년</h1>', unsafe_allow_html=True)
         # =====================================================================================
         st.markdown('<h1 style="text-align:center; color:white; text-shadow:2px 2px 4px black; margin-bottom: 30px;">걸어온 길, 스마트 로그<br>발자국으로 되짚다</h1>', unsafe_allow_html=True)
  
