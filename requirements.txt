@@ -3,3 +3,5 @@ pymongo
 google-generativeai
 pandas
 streamlit-image-comparison
+Pillow
+requests
