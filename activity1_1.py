@@ -1,24 +1,63 @@
 import streamlit as st
 import os
+import io
 import datetime
 import base64
 from pymongo import MongoClient
+from PIL import Image
 
 # ---------------------------------------------------------
 # 🛠️ 1. MongoDB 연결 설정
 # ---------------------------------------------------------
 @st.cache_resource
 def init_connection():
-    return MongoClient(st.secrets["mongo"]["uri"])
+    try:
+        c = MongoClient(st.secrets["mongo"]["uri"], serverSelectionTimeoutMS=5000)
+        c.admin.command("ping")
+        return c
+    except Exception as e:
+        print(f"[DB ERROR] activity1_1: {e}")
+        return None
 
-try:
-    client = init_connection()
-    db = client["school_project"]       
-    collection = db["student_timeline"] 
-    db_connected = True
-except Exception as e:
-    db_connected = False
-    st.error(f"🚨 DB 연결 에러: {e}")
+
+client = init_connection()
+db_connected = client is not None
+if db_connected:
+    db = client["school_project"]
+    collection = db["student_timeline"]
+
+
+# ---------------------------------------------------------
+# 사진 용량 줄이기 (저장 실패 방지)
+# ---------------------------------------------------------
+def shrink_image_b64(uploaded_file, max_side=800, quality=80):
+    """업로드한 사진을 작게 줄여 base64 문자열로 바꿔 줍니다."""
+    img = Image.open(uploaded_file)
+    if img.mode in ("RGBA", "P"):
+        img = img.convert("RGB")
+    img.thumbnail((max_side, max_side))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=quality)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+STEPS = [
+    ("1단계_태어났을때", "box-1", "내가<br>태어났을 때"),
+    ("2단계_어린이집유치원", "box-2", "어린이집<br>유치원"),
+    ("3단계_입학식", "box-3", "초등학교<br>입학식"),
+    ("4단계_지금의나", "box-4", "지금의 나"),
+    ("5단계_미래의나", "box-5", "1년 후의<br>내 모습"),
+]
+
+# 단계별 안내 문구 (사진을 구하기 어려운 경우를 돕기 위함)
+STEP_HINTS = {
+    "1단계_태어났을때": "아기 때 사진이 없다면, 그때의 내 모습을 상상해서 그림으로 그린 뒤 찍어도 좋아요! 🎨",
+    "2단계_어린이집유치원": "사진을 못 찾았다면 그때 기억나는 장면을 그림으로 그려도 괜찮아요! 🎨",
+    "3단계_입학식": "입학식 사진이 없다면 학교에 처음 온 날을 떠올리며 그려 보세요! 🎨",
+    "4단계_지금의나": "지금 내 모습을 바로 찍어서 올려도 좋아요! 📸",
+    "5단계_미래의나": "1년 뒤는 아직 오지 않았으니, 상상해서 그린 그림을 찍어 올려 주세요! 🎨",
+}
+
 
 def show_page():
     if "current_step" not in st.session_state:
@@ -31,69 +70,104 @@ def show_page():
         <style>
         .timeline-container { display: flex; flex-direction: column; align-items: center; margin-top: 30px; width: fit-content; margin-left: auto; margin-right: auto; }
         .box { width: 180px; height: 100px; background-color: #FFFFFF; border-radius: 25px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: bold; color: #444; box-shadow: 4px 4px 15px rgba(0,0,0,0.08); border: 5px solid #EEEEEE; text-align: center; line-height: 1.3; padding: 10px; margin: 0 auto 5px auto; }
-        .box-1 { border-color: #FFB3BA !important; } .box-2 { border-color: #FFDFBA !important; } .box-3 { border-color: #FFFFBA !important; } .box-4 { border-color: #BAFFC9 !important; } .box-5 { border-color: #BAE1FF !important; } 
-        
-        /* 💡 수정된 부분: 가로 길이(width) 130px 제한을 삭제하고 여백(padding)으로 버튼을 시원하게 늘립니다! */
-        div.stButton > button { 
-            border-radius: 50px !important; 
-            padding: 8px 30px !important; /* 좌우 여백을 넉넉하게 주어 버튼이 길어지도록 함 */
-            height: auto !important; 
+        .box-1 { border-color: #FFB3BA !important; } .box-2 { border-color: #FFDFBA !important; } .box-3 { border-color: #FFFFBA !important; } .box-4 { border-color: #BAFFC9 !important; } .box-5 { border-color: #BAE1FF !important; }
+
+        div.stButton > button {
+            border-radius: 50px !important;
+            padding: 8px 30px !important;
+            height: auto !important;
             min-height: 45px !important;
-            background-color: #ffffff !important; 
-            border: 2px solid #FF8080 !important; 
-            color: #FF8080 !important; 
+            background-color: #ffffff !important;
+            border: 2px solid #FF8080 !important;
+            color: #FF8080 !important;
             font-size: 1.1rem !important;
-            font-weight: bold !important; 
-            transition: all 0.3s ease; 
+            font-weight: bold !important;
+            transition: all 0.3s ease;
         }
         div.stButton > button:hover { background-color: #FF8080 !important; color: #ffffff !important; }
-        
+
         .download-btn-container button { width: 175px !important; height: 70px !important; border: 3px solid #4D96FF !important; color: #4D96FF !important; background-color: #ffffff !important; border-radius: 50px !important; box-shadow: 0px 4px 10px rgba(77, 150, 255, 0.2) !important; white-space: pre-wrap !important; transition: all 0.3s ease; display: block; margin: 0 auto; }
         .download-btn-container button p { font-size: 1.25rem !important; font-weight: 900 !important; line-height: 1.3 !important; margin: 0 !important; }
         .download-btn-container button:hover { background-color: #4D96FF !important; color: #ffffff !important; }
         .arrow { font-size: 2.2rem; color: #FF8080; font-weight: bold; text-align: center; margin-top: 35px; }
         .vertical-connector { display: flex; justify-content: flex-end; width: 100%; padding-right: 73px; margin: 30px 0; }
         .arrow-down { font-size: 2.5rem; color: #FF8080; font-weight: bold; width: 35px; text-align: center; }
+        .done-badge { text-align: center; color: #2E7D32; font-weight: bold; font-size: 0.95rem; margin-bottom: 4px; }
         </style>
     """, unsafe_allow_html=True)
 
     st.title("👣 나의 발자국 살펴보기")
-    
+
+    user_id = st.session_state.get("username", "test_student")
+
+    # 이미 저장한 단계 확인 (진행 상황 표시용)
+    saved_stages = {}
+    if db_connected:
+        try:
+            for r in collection.find({"username": user_id}):
+                saved_stages[r["stage"]] = r
+        except Exception as e:
+            print(f"[DB READ ERROR] activity1_1: {e}")
+
+    # 진행 상황 안내
+    done_count = len(saved_stages)
+    st.progress(done_count / 5, text=f"나의 발자국 {done_count} / 5 단계 완성!")
+    if done_count < 5:
+        st.info("💡 사진을 못 구했다면 그림을 그려서 찍어 올려도 좋아요. 글만 먼저 저장해 두었다가 나중에 사진을 더할 수도 있어요!")
+
+    def step_button(key_name, label_key):
+        """단계별 저장 버튼. 이미 저장했으면 표시를 바꿔 줍니다."""
+        done = key_name in saved_stages
+        if done:
+            st.markdown('<div class="done-badge">✅ 기록 완료</div>', unsafe_allow_html=True)
+        label = "✏️ 다시 쓰기" if done else "💾 저장하기"
+        if st.button(label, key=label_key):
+            st.session_state.current_step = key_name
+
     # --- 타임라인 UI 시작 ---
     st.markdown('<div class="timeline-container">', unsafe_allow_html=True)
     c1, a1, c2, a2, c3 = st.columns([1, 0.2, 1, 0.2, 1])
     with c1:
         st.markdown('<div class="box box-1">내가<br>태어났을 때</div>', unsafe_allow_html=True)
-        if st.button("💾 저장하기", key="save1"): st.session_state.current_step = "1단계_태어났을때"
-    with a1: st.markdown('<div class="arrow">→</div>', unsafe_allow_html=True)
+        step_button("1단계_태어났을때", "save1")
+    with a1:
+        st.markdown('<div class="arrow">→</div>', unsafe_allow_html=True)
     with c2:
         st.markdown('<div class="box box-2">어린이집<br>유치원</div>', unsafe_allow_html=True)
-        if st.button("💾 저장하기", key="save2"): st.session_state.current_step = "2단계_어린이집유치원"
-    with a2: st.markdown('<div class="arrow">→</div>', unsafe_allow_html=True)
+        step_button("2단계_어린이집유치원", "save2")
+    with a2:
+        st.markdown('<div class="arrow">→</div>', unsafe_allow_html=True)
     with c3:
         st.markdown('<div class="box box-3">초등학교<br>입학식</div>', unsafe_allow_html=True)
-        if st.button("💾 저장하기", key="save3"): st.session_state.current_step = "3단계_입학식"
+        step_button("3단계_입학식", "save3")
 
     st.markdown('<div class="vertical-connector"><div class="arrow-down">↓</div></div>', unsafe_allow_html=True)
 
     c_down, c5, a3, c4 = st.columns([1, 1, 0.2, 1])
     with c_down:
         st.markdown('<div class="download-btn-container">', unsafe_allow_html=True)
-        pdf_file_path = "letter.pdf" 
+        pdf_file_path = "letter.pdf"
         if os.path.exists(pdf_file_path):
             with open(pdf_file_path, "rb") as pdf_file:
-                st.download_button(label="📄 활동지\n다운로드", data=pdf_file.read(), file_name="letter.pdf", mime="application/pdf", key="download_work")
+                st.download_button(
+                    label="📄 활동지\n다운로드",
+                    data=pdf_file.read(),
+                    file_name="letter.pdf",
+                    mime="application/pdf",
+                    key="download_work",
+                )
         else:
             st.button("📄 활동지\n(준비 중)", key="no_file_btn", disabled=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c4:
         st.markdown('<div class="box box-4">지금의 나</div>', unsafe_allow_html=True)
-        if st.button("💾 저장하기", key="save4"): st.session_state.current_step = "4단계_지금의나"
-    with a3: st.markdown('<div class="arrow">←</div>', unsafe_allow_html=True)
+        step_button("4단계_지금의나", "save4")
+    with a3:
+        st.markdown('<div class="arrow">←</div>', unsafe_allow_html=True)
     with c5:
         st.markdown('<div class="box box-5">1년 후의<br>내 모습</div>', unsafe_allow_html=True)
-        if st.button("💾 저장하기", key="save5"): st.session_state.current_step = "5단계_미래의나"
+        step_button("5단계_미래의나", "save5")
 
     st.markdown('</div>', unsafe_allow_html=True)
     # --- 타임라인 UI 끝 ---
@@ -102,62 +176,94 @@ def show_page():
     # 📝 3. 데이터베이스 저장 영역
     # ---------------------------------------------------------
     if st.session_state.current_step:
+        step_key = st.session_state.current_step
         st.divider()
-        display_name = st.session_state.current_step.split("_")[1]
+        display_name = step_key.split("_")[1]
         st.subheader(f"📍 '{display_name}' 단계 기록하기")
-        
-        # 💡 핵심 수정 부분: key 값에 st.session_state.current_step을 추가하여 단계별로 완전히 다른 입력창으로 인식하게 만듭니다!
-        memory_text = st.text_area("✨ 이 때의 나에게 하고 싶은 말이나 기억나는 점을 적어보세요!", height=100, key=f"text_{st.session_state.current_step}")
-        uploaded_file = st.file_uploader("📸 사진 파일을 선택해주세요.", type=["png", "jpg", "jpeg"], key=f"file_{st.session_state.current_step}")
+
+        # 단계별 도움말
+        hint = STEP_HINTS.get(step_key, "")
+        if hint:
+            st.caption(hint)
+
+        prev = saved_stages.get(step_key)
+        prev_text = prev.get("content", "") if prev else ""
+        prev_image = prev.get("image_base64", "") if prev else ""
+
+        if prev_image:
+            st.markdown("**지금 올려 둔 사진**")
+            st.image(f"data:image/jpeg;base64,{prev_image}", width=200)
+
+        memory_text = st.text_area(
+            "✨ 이 때의 나에게 하고 싶은 말이나 기억나는 점을 적어보세요!",
+            value=prev_text,
+            height=100,
+            key=f"text_{step_key}",
+        )
+        uploaded_file = st.file_uploader(
+            "📸 사진 파일을 선택해주세요. (없으면 글만 먼저 저장해도 괜찮아요)",
+            type=["png", "jpg", "jpeg"],
+            key=f"file_{step_key}",
+        )
 
         if st.button("🚀 내 발자국 영구 저장하기", type="primary"):
-            if uploaded_file is not None and memory_text != "":
-                if db_connected:
-                    user_id = st.session_state.get('username', 'test_student')
-                    encoded_image = base64.b64encode(uploaded_file.getvalue()).decode('utf-8')
-                    
+            if not memory_text.strip():
+                st.warning("⚠️ 이 때의 기억이나 하고 싶은 말을 한 줄이라도 적어주세요!")
+            elif not db_connected:
+                st.error("서버 연결이 잠시 불안정해요. 선생님께 말씀드려 주세요. 🙂")
+            else:
+                try:
                     record = {
                         "username": user_id,
-                        "stage": st.session_state.current_step,
+                        "stage": step_key,
                         "content": memory_text,
-                        "image_base64": encoded_image,
-                        "timestamp": datetime.datetime.now()
+                        "timestamp": datetime.datetime.now(),
                     }
-                    
+                    # 새 사진이 있으면 줄여서 저장, 없으면 기존 사진 유지
+                    if uploaded_file is not None:
+                        record["image_base64"] = shrink_image_b64(uploaded_file)
+                    elif prev_image:
+                        record["image_base64"] = prev_image
+
                     collection.update_one(
-                        {"username": user_id, "stage": st.session_state.current_step}, 
-                        {"$set": record}, 
-                        upsert=True
+                        {"username": user_id, "stage": step_key},
+                        {"$set": record},
+                        upsert=True,
                     )
-                    
-                    st.toast(f"🎉 '{display_name}' 발자국이 안전하게 저장되었어요!", icon="✅")
-                    st.balloons()
-                    st.session_state.current_step = None 
-                    st.rerun() 
-                else:
-                    st.error("DB가 연결되지 않았습니다.")
-            else:
-                st.warning("⚠️ 사진을 올리고 내용도 함께 적어주세요!")
+
+                    if "image_base64" in record:
+                        st.toast(f"🎉 '{display_name}' 발자국이 안전하게 저장되었어요!", icon="✅")
+                        st.balloons()
+                    else:
+                        st.toast("📝 글을 저장했어요! 사진은 나중에 더해도 괜찮아요.", icon="✅")
+
+                    st.session_state.current_step = None
+                    st.rerun()
+                except Exception as e:
+                    print(f"[SAVE ERROR] activity1_1: {e}")
+                    st.error("저장하는 중에 문제가 생겼어요. 사진이 너무 크지 않은지 확인하고 다시 해볼까요? 🙂")
 
     # ---------------------------------------------------------
     # 🌟 4. '나의 성장 과정' 한눈에 보기
     # ---------------------------------------------------------
     if db_connected:
-        user_id = st.session_state.get('username', 'test_student')
-        user_records = list(collection.find({"username": user_id}))
-        saved_stages = {r["stage"]: r.get("image_base64", "") for r in user_records if "image_base64" in r}
-        
-        if len(saved_stages) >= 5:
+        photo_stages = {
+            k: v.get("image_base64", "")
+            for k, v in saved_stages.items()
+            if v.get("image_base64")
+        }
+
+        if len(photo_stages) >= 5:
             st.divider()
-            
+
             _, btn_col, _ = st.columns([0.5, 4, 0.5])
             with btn_col:
                 if st.button("🌟 나의 성장 과정", use_container_width=True):
                     st.session_state.show_growth = not st.session_state.show_growth
-                    
+
             if st.session_state.show_growth:
                 st.markdown('<div class="timeline-container">', unsafe_allow_html=True)
-                
+
                 def get_photo_box(img_base64, box_class, title_text):
                     return f'''
                     <div style="display: flex; flex-direction: column; align-items: center;">
@@ -171,22 +277,20 @@ def show_page():
                     '''
 
                 c1, a1, c2, a2, c3 = st.columns([1, 0.2, 1, 0.2, 1])
-                with c1: st.markdown(get_photo_box(saved_stages.get("1단계_태어났을때", ""), "box-1", "내가<br>태어났을 때"), unsafe_allow_html=True)
+                with c1: st.markdown(get_photo_box(photo_stages.get("1단계_태어났을때", ""), "box-1", "내가<br>태어났을 때"), unsafe_allow_html=True)
                 with a1: st.markdown('<div class="arrow">→</div>', unsafe_allow_html=True)
-                with c2: st.markdown(get_photo_box(saved_stages.get("2단계_어린이집유치원", ""), "box-2", "어린이집<br>유치원"), unsafe_allow_html=True)
+                with c2: st.markdown(get_photo_box(photo_stages.get("2단계_어린이집유치원", ""), "box-2", "어린이집<br>유치원"), unsafe_allow_html=True)
                 with a2: st.markdown('<div class="arrow">→</div>', unsafe_allow_html=True)
-                with c3: st.markdown(get_photo_box(saved_stages.get("3단계_입학식", ""), "box-3", "초등학교<br>입학식"), unsafe_allow_html=True)
-                
+                with c3: st.markdown(get_photo_box(photo_stages.get("3단계_입학식", ""), "box-3", "초등학교<br>입학식"), unsafe_allow_html=True)
+
                 st.markdown('<div class="vertical-connector"><div class="arrow-down">↓</div></div>', unsafe_allow_html=True)
-                
+
                 c_down, c5, a3, c4 = st.columns([1, 1, 0.2, 1])
-                with c_down: st.write("") 
-                with c4: st.markdown(get_photo_box(saved_stages.get("4단계_지금의나", ""), "box-4", "지금의 나"), unsafe_allow_html=True)
+                with c_down: st.write("")
+                with c4: st.markdown(get_photo_box(photo_stages.get("4단계_지금의나", ""), "box-4", "지금의 나"), unsafe_allow_html=True)
                 with a3: st.markdown('<div class="arrow">←</div>', unsafe_allow_html=True)
-                with c5: st.markdown(get_photo_box(saved_stages.get("5단계_미래의나", ""), "box-5", "1년 후의<br>내 모습"), unsafe_allow_html=True)
-                
+                with c5: st.markdown(get_photo_box(photo_stages.get("5단계_미래의나", ""), "box-5", "1년 후의<br>내 모습"), unsafe_allow_html=True)
+
                 st.markdown('</div>', unsafe_allow_html=True)
 
     st.write("")
-    st.info("💡 각 단계를 따라가며 옛 기억을 떠올리고 미래를 생각해보세요.")
-    st.info("💡 '활동지 다운로드'를 눌러 활동지를 다운 받아 직접 그림과 글로 표현해보세요.")
