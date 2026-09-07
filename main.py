@@ -318,19 +318,3 @@ else:
         elif page == "3_2": activity3_2.show_page()
         elif page == "3_3": activity3_3.show_page()
         elif page == "stu_dash": stu_dash.show_page()
-
-# ===== 임시: 비밀번호 변환 (한 번만 실행 후 반드시 삭제) =====
-if st.session_state.get("role") == "선생님":
-    st.sidebar.markdown("---")
-    if st.sidebar.button("⚠️ 비밀번호 일괄 변환"):
-        changed = 0
-        for u in users_collection.find({}):
-            pw = u.get("password", "")
-            if len(pw) == 64 and all(c in "0123456789abcdef" for c in pw):
-                continue
-            users_collection.update_one(
-                {"_id": u["_id"]},
-                {"$set": {"password": hash_pw(pw)}}
-            )
-            changed += 1
-        st.sidebar.success(f"{changed}개 계정 변환 완료")
