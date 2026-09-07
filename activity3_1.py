@@ -68,6 +68,23 @@ CHECK_OPTIONS = [
 
 
 def show_page():
+    st.markdown("""
+        <style>
+        div.stButton > button {
+            border-radius: 50px !important;
+            padding: 8px 30px !important;
+            min-height: 45px !important;
+            background-color: #ffffff !important;
+            border: 2px solid #FF8080 !important;
+            color: #FF8080 !important;
+            font-size: 1.1rem !important;
+            font-weight: bold !important;
+            transition: all 0.3s ease;
+        }
+        div.stButton > button:hover { background-color: #FF8080 !important; color: #ffffff !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.title(f"📖 {REGION}의 옛이야기 탐험")
     st.info(f"💡 궁금한 {REGION}의 장소나 인물을 검색하면 AI가 알고 있는 이야기를 들려줍니다!")
 
