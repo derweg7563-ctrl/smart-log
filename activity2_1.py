@@ -98,7 +98,7 @@ def generate_ai_desc(relic_name):
 # 🏛️ 기능 2: 국립중앙박물관 유물 검색기
 # ==========================================
 def search_museum_relics(keyword):
-    url = "https://www.emuseum.go.kr/openapi/relic/list"
+    url = "http://www.emuseum.go.kr/openapi/relic/list"
     my_key = st.secrets["museum"]["api_key"]
 
     headers = {
