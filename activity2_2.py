@@ -5,6 +5,7 @@ from pymongo import MongoClient
 # 👇 AI 보조교사 · AI 모델 모듈 불러오기
 import ai_teacher
 import ai_model
+import config
 
 ai_model.configure()
 
