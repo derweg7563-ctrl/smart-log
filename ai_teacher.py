@@ -7,6 +7,40 @@ ai_model.configure()
 
 
 def show_ai_teacher(activity_name, context_description):
+    st.markdown("""
+        <style>
+        div.stButton > button,
+        div[data-testid="stFormSubmitButton"] > button,
+        div[data-testid="stDownloadButton"] > button,
+        div[data-testid="stPopover"] > button,
+        div[data-testid="stChatInput"] button,
+        div[data-testid="stChatInputSubmitButton"] {
+            border-radius: 50px !important;
+            padding: 8px 30px !important;
+            min-height: 45px !important;
+            background-color: #ffffff !important;
+            border: 2px solid #FF8080 !important;
+            color: #FF8080 !important;
+            font-size: 1.1rem !important;
+            font-weight: bold !important;
+            transition: all 0.3s ease;
+        }
+        div.stButton > button:hover,
+        div[data-testid="stFormSubmitButton"] > button:hover,
+        div[data-testid="stDownloadButton"] > button:hover,
+        div[data-testid="stPopover"] > button:hover,
+        div[data-testid="stChatInput"] button:hover {
+            background-color: #FF8080 !important;
+            color: #ffffff !important;
+        }
+        div.stButton > button:focus:not(:active),
+        div[data-testid="stFormSubmitButton"] > button:focus:not(:active) {
+            border-color: #FF8080 !important;
+            color: #FF8080 !important;
+            box-shadow: none !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     REGION = config.get_region()
     st.markdown("---")
     st.markdown("### 🤖 무엇이든 물어보세요! (AI 보조교사)")
