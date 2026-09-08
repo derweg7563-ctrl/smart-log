@@ -289,7 +289,8 @@ else:
 
     st.sidebar.markdown(get_hook("stu_dash", "sub-menu-hook"), unsafe_allow_html=True)
     st.sidebar.button("📊 나의 활동 기록 보기", on_click=go_to, args=("stu_dash",), use_container_width=True)
-
+    st.sidebar.caption("이미지: Pixabay | 유물: 국립중앙박물관 e뮤지엄 | 지도: 카카오맵 | AI: Google Gemini")
+    
     if st.session_state.role == "선생님":
         teacher_page.show_page()
     else:
