@@ -1,11 +1,6 @@
 import streamlit as st
 import config
 
-
-# 지역명은 한 곳에서만 관리합니다.
-REGION = st.secrets.get("app", {}).get("region", "우리 고장")
-
-
 def show_page():
     REGION = config.get_region()
     # 환영 인사와 디자인
