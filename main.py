@@ -168,6 +168,7 @@ if not st.session_state.logged_in:
     if st.sidebar.button("👉 전체 학습 안내 보기", use_container_width=True):
         st.session_state.show_question = True
         st.rerun()
+    st.sidebar.caption("배경 이미지 출처: Pixabay")
 
     if st.session_state.show_question:
         question.show_page()
