@@ -24,7 +24,7 @@ def _get_db():
         print(f"[DB ERROR] config: {e}")
         return None
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=300)
 def _load_settings():
     """설정값을 한 번에 읽어 30초간 재사용합니다. (매번 DB를 두드리지 않도록)"""
     values = {}
