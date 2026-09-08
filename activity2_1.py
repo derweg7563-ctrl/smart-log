@@ -160,6 +160,7 @@ def search_museum_relics(keyword):
 # 💻 화면 그리기 (show_page)
 # ==========================================
 def show_page():
+    REGION = config.get_region()
     st.title("🔍 옛 물건 살펴보기")
     current_student = st.session_state.get("username", "학생")
 
