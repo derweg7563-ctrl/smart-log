@@ -91,6 +91,12 @@ def show_page():
         div.stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
             background-color: #FF8080 !important; color: #ffffff !important;
         }
+        div.stButton > button:focus:not(:active),
+        div[data-testid="stFormSubmitButton"] > button:focus:not(:active) {
+            border-color: #FF8080 !important;
+            color: #FF8080 !important;
+            box-shadow: none !important;
+        }
         </style>
     """, unsafe_allow_html=True)
     st.title("🕵️‍♂️ AI 유물 탐정이 되어보기")
