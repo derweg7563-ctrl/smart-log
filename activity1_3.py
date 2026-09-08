@@ -7,6 +7,7 @@ from PIL import Image
 
 # 👇 AI 보조교사 모듈 불러오기!
 import ai_teacher
+import config
 
 
 def shrink_image_b64(uploaded_file, max_side=800, quality=80):
