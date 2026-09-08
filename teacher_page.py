@@ -267,6 +267,10 @@ def show_page(*args, **kwargs):
 
         st.markdown("#### 📚 지역 아카이브 링크 (선택)")
         st.caption("우리 고장의 옛 사진·자료를 모아 둔 사이트가 있다면 주소를 넣어 주세요. 비워 두면 해당 링크가 숨겨집니다.")
+        new_archive_name = st.text_input(
+            "아카이브 이름", value=get_setting("archive_name"),
+            help="예: 안성저장소, 평택시 기록관"
+        )
         new_archive = st.text_input("아카이브 주소", value=get_setting("archive_url"))
 
         if st.button("💾 설정 저장하기", use_container_width=True):
@@ -276,6 +280,7 @@ def show_page(*args, **kwargs):
                 save_setting("region", new_region.strip())
                 save_setting("map_lat", new_lat.strip())
                 save_setting("map_lng", new_lng.strip())
+                save_setting("archive_name", new_archive_name.strip())
                 save_setting("archive_url", new_archive.strip())
                 st.success(f"'{new_region.strip()}'(으)로 설정되었습니다.")
                 st.rerun()
