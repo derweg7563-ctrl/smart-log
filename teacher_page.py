@@ -5,32 +5,37 @@ import stu_dash
 from config import get_setting, save_setting
 
 # ============================================================
-# DB 연결 (실제 접속까지 확인)
+# DB 연결
+#  - 연결 실패(None)를 캐시에 저장하지 않도록 분리했습니다.
+#    예외를 그대로 던지면 cache_resource가 값을 저장하지 않아
+#    다음 요청에서 자동으로 다시 시도합니다.
 # ============================================================
 @st.cache_resource
-def init_connection():
+def _connect():
+    c = MongoClient(st.secrets["mongo"]["uri"], serverSelectionTimeoutMS=5000)
+    c.admin.command("ping")
+    return c
+
+
+def get_db():
+    """DB를 가져옵니다. 연결이 안 되면 None을 돌려주되 캐시에는 남기지 않습니다."""
     try:
-        c = MongoClient(st.secrets["mongo"]["uri"], serverSelectionTimeoutMS=5000)
-        c.admin.command("ping")
-        return c
+        return _connect()["school_project"]
     except Exception as e:
         print(f"[DB ERROR] teacher_page: {e}")
         return None
 
 
-client = init_connection()
-db_connected = client is not None
-
-if db_connected:
-    db = client["school_project"]
-    users_collection = db["users"]
-    settings_collection = db["settings"]                  # 고장 설정 저장소
-
-    timeline_collection = db["student_timeline"]          # 1-1. 나의 발자국
-    school_collection = db["school_footprints"]           # 1-2. 학교 발자국
-    old_items_collection = db["act2_1"]                   # 2-1. 옛 물건 살펴보기
-    exhibition_collection = db["exhibition_items"]        # 2-3. 애장품 전시회
-    local_history_collection = db["local_history"]        # 3-1, 3-2, 3-3 통합
+def get_collections(db):
+    return {
+        "users": db["users"],
+        "settings": db["settings"],
+        "timeline": db["student_timeline"],        # 1-1. 나의 발자국
+        "school": db["school_footprints"],         # 1-2. 학교 발자국
+        "old_items": db["act2_1"],                 # 2-1. 옛 물건 살펴보기
+        "exhibition": db["exhibition_items"],      # 2-3. 애장품 전시회
+        "local": db["local_history"],              # 3-1, 3-2, 3-3 통합
+    }
 
 
 # ============================================================
@@ -44,22 +49,17 @@ ACTIVITY_MAP = [
     ("3단원 고장 탐험", "local"),
 ]
 
-
-def count_works(username):
-    return {
-        "timeline": timeline_collection.count_documents({"username": username}),
-        "school": school_collection.count_documents({"username": username}),
-        "old_items": old_items_collection.count_documents({"username": username}),
-        "exhibition": exhibition_collection.count_documents({"username": username}),
-        "local": local_history_collection.count_documents({"username": username}),
-    }
+WORK_KEYS = ["timeline", "school", "old_items", "exhibition", "local"]
 
 
-def delete_all_works(username):
+def count_works(col, username):
+    return {k: col[k].count_documents({"username": username}) for k in WORK_KEYS}
+
+
+def delete_all_works(col, username):
     """회원 삭제 시 활동 기록도 함께 지웁니다. (고아 데이터 방지)"""
-    for col in [timeline_collection, school_collection, old_items_collection,
-                exhibition_collection, local_history_collection]:
-        col.delete_many({"username": username})
+    for k in WORK_KEYS:
+        col[k].delete_many({"username": username})
 
 
 # ============================================================
@@ -69,17 +69,25 @@ def show_page(*args, **kwargs):
     st.title("👩‍🏫 선생님 전용 관리 대시보드")
     st.info("우리 반 학생들의 가입 현황을 관리하고, 학생들의 학습 진행도를 한눈에 확인하는 공간입니다.")
 
-    if not db_connected:
-        st.warning("데이터베이스에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.")
+    db = get_db()
+    if db is None:
+        st.warning("데이터베이스에 연결할 수 없습니다. 잠시 후 새로고침해 주세요.")
         return
 
+    col = get_collections(db)
     REGION = get_setting("region")
 
     tab1, tab2, tab3, tab4 = st.tabs(
         ["📊 학습 현황", "👥 학생 계정 관리", "🎓 학생별 일지 확인", "⚙️ 우리 고장 설정"]
     )
 
-    students = list(users_collection.find({"role": "학생"}))
+    try:
+        students = list(col["users"].find({"role": "학생"}))
+    except Exception as e:
+        print(f"[USER LOAD ERROR] {e}")
+        st.warning("학생 명단을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.")
+        return
+
     student_names = [s["username"] for s in students]
 
     # ------------------------------------------------------
@@ -94,17 +102,17 @@ def show_page(*args, **kwargs):
             rows = []
             totals = {k: 0 for _, k in ACTIVITY_MAP}
             for name in student_names:
-                c = count_works(name)
+                c = count_works(col, name)
                 for _, k in ACTIVITY_MAP:
                     totals[k] += 1 if c[k] > 0 else 0
                 rows.append((name, c))
 
             st.markdown("#### 활동별 참여 학생 수")
             cols = st.columns(len(ACTIVITY_MAP))
-            for col, (label, key) in zip(cols, ACTIVITY_MAP):
+            for c_col, (label, key) in zip(cols, ACTIVITY_MAP):
                 done = totals[key]
                 rate = round(done / len(students) * 100)
-                col.metric(label, f"{done}/{len(students)}", f"{rate}%")
+                c_col.metric(label, f"{done}/{len(students)}", f"{rate}%")
 
             st.markdown("---")
             st.markdown("#### 학생별 기록 개수")
@@ -112,14 +120,14 @@ def show_page(*args, **kwargs):
 
             header = st.columns([2] + [1] * len(ACTIVITY_MAP))
             header[0].markdown("**학생**")
-            for col, (label, _) in zip(header[1:], ACTIVITY_MAP):
-                col.markdown(f"**{label}**")
+            for h_col, (label, _) in zip(header[1:], ACTIVITY_MAP):
+                h_col.markdown(f"**{label}**")
 
             for name, c in rows:
                 line = st.columns([2] + [1] * len(ACTIVITY_MAP))
                 line[0].write(name)
-                for col, (_, key) in zip(line[1:], ACTIVITY_MAP):
-                    col.write(c[key] if c[key] else "-")
+                for l_col, (_, key) in zip(line[1:], ACTIVITY_MAP):
+                    l_col.write(c[key] if c[key] else "-")
 
     # ------------------------------------------------------
     # 👥 탭 2. 학생 계정 관리
@@ -132,10 +140,10 @@ def show_page(*args, **kwargs):
         else:
             st.warning("⚠️ 회원을 삭제하면 그 학생의 활동 기록도 모두 함께 지워집니다.")
 
-            col1, col2, col3 = st.columns([1, 3, 2])
-            col1.markdown("**순번**")
-            col2.markdown("**학생 아이디**")
-            col3.markdown("**계정 관리**")
+            c1, c2, c3 = st.columns([1, 3, 2])
+            c1.markdown("**순번**")
+            c2.markdown("**학생 아이디**")
+            c3.markdown("**계정 관리**")
             st.markdown("---")
 
             for idx, student in enumerate(students):
@@ -149,10 +157,14 @@ def show_page(*args, **kwargs):
                     if st.session_state.get(confirm_key):
                         b1, b2 = st.columns(2)
                         if b1.button("정말 삭제", key=f"yes_{name}"):
-                            delete_all_works(name)
-                            users_collection.delete_one({"username": name})
-                            st.session_state.pop(confirm_key, None)
-                            st.success(f"'{name}' 학생의 계정과 기록을 삭제했습니다.")
+                            try:
+                                delete_all_works(col, name)
+                                col["users"].delete_one({"username": name})
+                                st.session_state.pop(confirm_key, None)
+                                st.success(f"'{name}' 학생의 계정과 기록을 삭제했습니다.")
+                            except Exception as e:
+                                print(f"[DELETE ERROR] {e}")
+                                st.warning("삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.")
                             st.rerun()
                         if b2.button("취소", key=f"no_{name}"):
                             st.session_state.pop(confirm_key, None)
@@ -185,38 +197,38 @@ def show_page(*args, **kwargs):
                         if not works:
                             st.caption("저장된 기록이 없습니다.")
                         for w in works:
-                            c1, c2 = st.columns([4, 1])
-                            c1.write(f"• **{label_fn(w)}**")
-                            if c2.button("🗑️ 삭제", key=f"{key_prefix}_{w['_id']}"):
+                            w1, w2 = st.columns([4, 1])
+                            w1.write(f"• **{label_fn(w)}**")
+                            if w2.button("🗑️ 삭제", key=f"{key_prefix}_{w['_id']}"):
                                 collection.delete_one({"_id": w["_id"]})
                                 st.rerun()
                         st.markdown("---")
 
                     work_list(
                         "##### 👣 1-1. 나의 발자국 살펴보기",
-                        timeline_collection,
-                        list(timeline_collection.find({"username": selected_student})),
+                        col["timeline"],
+                        list(col["timeline"].find({"username": selected_student})),
                         lambda w: w.get("stage", "기록"),
                         "del_1_1",
                     )
                     work_list(
                         "##### 🏫 1-2. 학교 발자국 기록하기",
-                        school_collection,
-                        list(school_collection.find({"username": selected_student})),
+                        col["school"],
+                        list(col["school"].find({"username": selected_student})),
                         lambda w: "학교 발자국 탐험 기록",
                         "del_1_2",
                     )
                     work_list(
                         "##### 🏺 2-1. 찾은 옛 물건 AI 분석 기록",
-                        old_items_collection,
-                        list(old_items_collection.find({"username": selected_student})),
+                        col["old_items"],
+                        list(col["old_items"].find({"username": selected_student})),
                         lambda w: "유물 분석 및 나의 생각",
                         "del_2_1",
                     )
                     work_list(
                         "##### 🖼️ 2-3. 우리 반 애장품 전시회 출품작",
-                        exhibition_collection,
-                        list(exhibition_collection.find({"username": selected_student})),
+                        col["exhibition"],
+                        list(col["exhibition"].find({"username": selected_student})),
                         lambda w: w.get("item_name", "애장품"),
                         "del_2_3",
                     )
@@ -233,8 +245,8 @@ def show_page(*args, **kwargs):
 
                     work_list(
                         f"##### 📖 3단원. {REGION}의 역사 탐험 기록",
-                        local_history_collection,
-                        list(local_history_collection.find({"username": selected_student})),
+                        col["local"],
+                        list(col["local"].find({"username": selected_student})),
                         label_3,
                         "del_3",
                     )
@@ -261,10 +273,10 @@ def show_page(*args, **kwargs):
         )
 
         st.markdown("#### 🗺️ 지도 중심 좌표 (선택)")
-        st.caption("비워 두면 지도 기능이 기본 위치로 열립니다.")
-        c1, c2 = st.columns(2)
-        new_lat = c1.text_input("위도(latitude)", value=get_setting("map_lat"))
-        new_lng = c2.text_input("경도(longitude)", value=get_setting("map_lng"))
+        st.caption("비워 두면 지도 기능이 기본 위치로 열립니다. 숫자만 입력해 주세요.")
+        m1, m2 = st.columns(2)
+        new_lat = m1.text_input("위도(latitude)", value=get_setting("map_lat"))
+        new_lng = m2.text_input("경도(longitude)", value=get_setting("map_lng"))
 
         st.markdown("#### 📚 지역 아카이브 링크 (선택)")
         st.caption("우리 고장의 옛 사진·자료를 모아 둔 사이트가 있다면 주소를 넣어 주세요. 비워 두면 해당 링크가 숨겨집니다.")
@@ -272,16 +284,39 @@ def show_page(*args, **kwargs):
             "아카이브 이름", value=get_setting("archive_name"),
             help="예: 안성저장소, 평택시 기록관"
         )
-        new_archive = st.text_input("아카이브 주소", value=get_setting("archive_url"))
+        new_archive = st.text_input(
+            "아카이브 주소", value=get_setting("archive_url"),
+            help="http:// 또는 https:// 로 시작하는 전체 주소를 넣어 주세요."
+        )
 
         if st.button("💾 설정 저장하기", use_container_width=True):
+            lat, lng = new_lat.strip(), new_lng.strip()
+            url = new_archive.strip()
+
             if not new_region.strip():
                 st.warning("고장 이름은 비워 둘 수 없습니다.")
+            elif (lat and not _is_number(lat)) or (lng and not _is_number(lng)):
+                st.warning("위도와 경도는 숫자로 입력해 주세요. (예: 36.9921 / 127.1129)")
+            elif url and not url.startswith(("http://", "https://")):
+                st.warning("아카이브 주소는 http:// 또는 https:// 로 시작해야 합니다.")
             else:
-                save_setting("region", new_region.strip())
-                save_setting("map_lat", new_lat.strip())
-                save_setting("map_lng", new_lng.strip())
-                save_setting("archive_name", new_archive_name.strip())
-                save_setting("archive_url", new_archive.strip())
-                st.success(f"'{new_region.strip()}'(으)로 설정되었습니다.")
-                st.rerun()
+                ok = all([
+                    save_setting("region", new_region.strip()),
+                    save_setting("map_lat", lat),
+                    save_setting("map_lng", lng),
+                    save_setting("archive_name", new_archive_name.strip()),
+                    save_setting("archive_url", url),
+                ])
+                if ok:
+                    st.success(f"'{new_region.strip()}'(으)로 설정되었습니다.")
+                    st.rerun()
+                else:
+                    st.warning("저장에 실패했습니다. 잠시 후 다시 시도해 주세요.")
+
+
+def _is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
