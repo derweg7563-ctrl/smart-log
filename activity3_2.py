@@ -5,9 +5,7 @@ from pymongo import MongoClient
 
 # 👇 AI 보조교사 모듈 불러오기
 import ai_teacher
-
-# 지역명은 한 곳에서만 관리합니다.
-REGION = st.secrets.get("app", {}).get("region", "우리 고장")
+import config
 
 
 # ---------------------------------------------------------
@@ -32,6 +30,7 @@ if db_connected:
 
 
 def show_page():
+    REGION = config.get_region()
     # 버튼 디자인 (다른 활동 화면과 통일)
     st.markdown("""
         <style>
