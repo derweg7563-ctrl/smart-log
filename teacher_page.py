@@ -1,4 +1,5 @@
 import streamlit as st
+import config
 from pymongo import MongoClient
 import stu_dash
 from config import get_setting, save_setting
