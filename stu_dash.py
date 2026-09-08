@@ -31,6 +31,7 @@ if db_connected:
 
 # 🎯 선생님이 '특정 학생(target_student)'의 이름을 넣어 호출할 수 있습니다.
 def show_page(target_student=None):
+    REGION = config.get_region()
     st.markdown("""
         <style>
         .dash-header { text-align: center; background-color: #E8F5E9; padding: 20px; border-radius: 20px; border: 3px solid #81C784; margin-bottom: 25px; }
