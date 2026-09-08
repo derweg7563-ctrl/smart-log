@@ -10,27 +10,29 @@ import config
 
 # ---------------------------------------------------------
 # DB 연결
+#  - 연결 실패(None)를 캐시에 남기지 않도록 분리했습니다.
+#    예외를 그대로 던지면 cache_resource가 값을 저장하지 않아
+#    다음 요청에서 자동으로 다시 시도합니다.
 # ---------------------------------------------------------
 @st.cache_resource
-def init_connection():
+def _connect():
+    c = MongoClient(st.secrets["mongo"]["uri"], serverSelectionTimeoutMS=5000)
+    c.admin.command("ping")
+    return c
+
+
+def get_collection():
     try:
-        c = MongoClient(st.secrets["mongo"]["uri"], serverSelectionTimeoutMS=5000)
-        c.admin.command("ping")
-        return c
+        return _connect()["school_project"]["local_history"]
     except Exception as e:
         print(f"[DB ERROR] activity3_2: {e}")
         return None
 
 
-client = init_connection()
-db_connected = client is not None
-if db_connected:
-    db = client["school_project"]
-    collection = db["local_history"]
-
-
 def show_page():
     REGION = config.get_region()
+    collection = get_collection()
+
     # 버튼 디자인 (다른 활동 화면과 통일)
     st.markdown("""
         <style>
@@ -47,6 +49,12 @@ def show_page():
         }
         div.stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
             background-color: #FF8080 !important; color: #ffffff !important;
+        }
+        div.stButton > button:focus:not(:active),
+        div[data-testid="stFormSubmitButton"] > button:focus:not(:active) {
+            border-color: #FF8080 !important;
+            color: #FF8080 !important;
+            box-shadow: none !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -117,8 +125,8 @@ def show_page():
         if st.form_submit_button("달라진 모습 기록하기 🚀", use_container_width=True):
             if not past_view.strip() or not present_view.strip():
                 st.warning("⚠️ 과거와 현재의 모습을 모두 적어주세요!")
-            elif not db_connected:
-                st.error("서버 연결이 잠시 불안정해요. 선생님께 말씀드려 주세요. 🙂")
+            elif collection is None:
+                st.error("서버 연결이 잠시 불안정해요. 화면을 새로고침한 뒤 다시 해볼까요? 🙂")
             else:
                 try:
                     collection.insert_one({
@@ -139,7 +147,7 @@ def show_page():
     # ---------------------------------------------------------
     # 📚 내가 기록한 변화 다시 보기
     # ---------------------------------------------------------
-    if db_connected:
+    if collection is not None:
         try:
             my_records = list(
                 collection.find({"username": current_student, "type": "달라진모습"})
