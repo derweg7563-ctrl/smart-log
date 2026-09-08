@@ -5,15 +5,15 @@
 - 다른 파일에서는 아래처럼 씁니다.
       import config
       REGION = config.get_region()
+  ※ 반드시 함수 안에서 호출하세요. 모듈 최상단에 두면 앱을 재시작하기
+     전까지 값이 바뀌지 않습니다.
 """
-
 import streamlit as st
-import config
 from pymongo import MongoClient
 
 DEFAULTS = {
     "region": "우리 고장",
-    "archive_name": "",
+    "archive_name": "우리 고장 기록관",
     "archive_url": "",
 }
 
@@ -48,15 +48,12 @@ def get_setting(key, default=None):
     """설정값 하나를 가져옵니다. DB → secrets → 기본값 순서로 찾습니다."""
     if default is None:
         default = DEFAULTS.get(key, "")
-
     db_values = _load_settings()
     if db_values.get(key):
         return db_values[key]
-
     secret_val = st.secrets.get("app", {}).get(key, "")
     if secret_val:
         return secret_val
-
     return default
 
 
@@ -66,6 +63,7 @@ def save_setting(key, value):
     if db is None:
         return False
     try:
+        value = (value or "").strip()
         db["settings"].update_one({"key": key}, {"$set": {"value": value}}, upsert=True)
         _load_settings.clear()          # 캐시를 비워 바로 반영되게 합니다.
         return True
@@ -76,3 +74,11 @@ def save_setting(key, value):
 
 def get_region():
     return get_setting("region")
+
+
+def get_archive_name():
+    return get_setting("archive_name")
+
+
+def get_archive_url():
+    return get_setting("archive_url")
