@@ -8,6 +8,7 @@ from PIL import Image
 
 # 👇 우리가 만든 AI 선생님 모듈 불러오기!
 import ai_teacher
+import config
 
 try:
     from streamlit_image_comparison import image_comparison
@@ -15,10 +16,6 @@ try:
 except ImportError:
     HAS_COMPARISON = False
 
-# 지역 아카이브 정보 (다른 지역 적용 시 이 부분만 변경)
-REGION = st.secrets.get("app", {}).get("region", "우리 고장")
-ARCHIVE_NAME = st.secrets.get("app", {}).get("archive_name", "")
-ARCHIVE_URL = st.secrets.get("app", {}).get("archive_url", "")
 
 
 # ---------------------------------------------------------
@@ -54,6 +51,9 @@ def shrink_image_b64(uploaded_file, max_side=800, quality=80):
 
 
 def show_page():
+    REGION = config.get_region()
+    ARCHIVE_NAME = config.get_setting("archive_name")
+    ARCHIVE_URL = config.get_setting("archive_url")
     # 🎨 2. 디자인 CSS
     st.markdown("""
         <style>
