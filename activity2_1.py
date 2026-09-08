@@ -161,6 +161,24 @@ def search_museum_relics(keyword):
 # ==========================================
 def show_page():
     REGION = config.get_region()
+    st.markdown("""
+        <style>
+        div.stButton > button, div[data-testid="stFormSubmitButton"] > button {
+            border-radius: 50px !important;
+            padding: 8px 30px !important;
+            min-height: 45px !important;
+            background-color: #ffffff !important;
+            border: 2px solid #FF8080 !important;
+            color: #FF8080 !important;
+            font-size: 1.1rem !important;
+            font-weight: bold !important;
+            transition: all 0.3s ease;
+        }
+        div.stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
+            background-color: #FF8080 !important; color: #ffffff !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     st.title("🔍 옛 물건 살펴보기")
     current_student = st.session_state.get("username", "학생")
 
