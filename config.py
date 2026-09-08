@@ -1,13 +1,3 @@
-"""
-고장 설정 공통 모듈
-- 교사 대시보드의 [⚙️ 우리 고장 설정] 탭에서 저장한 값을 읽어 옵니다.
-- DB에 값이 없으면 secrets.toml의 [app] 값을, 그것도 없으면 기본값을 씁니다.
-- 다른 파일에서는 아래처럼 씁니다.
-      import config
-      REGION = config.get_region()
-  ※ 반드시 함수 안에서 호출하세요. 모듈 최상단에 두면 앱을 재시작하기
-     전까지 값이 바뀌지 않습니다.
-"""
 import streamlit as st
 from pymongo import MongoClient
 
@@ -15,19 +5,24 @@ DEFAULTS = {
     "region": "우리 고장",
     "archive_name": "우리 고장 기록관",
     "archive_url": "",
+    "map_lat": "",
+    "map_lng": "",
 }
 
 
 @st.cache_resource
+def _connect_db():
+    c = MongoClient(st.secrets["mongo"]["uri"], serverSelectionTimeoutMS=5000)
+    c.admin.command("ping")
+    return c
+
+
 def _get_db():
     try:
-        c = MongoClient(st.secrets["mongo"]["uri"], serverSelectionTimeoutMS=5000)
-        c.admin.command("ping")
-        return c["school_project"]
+        return _connect_db()["school_project"]
     except Exception as e:
         print(f"[DB ERROR] config: {e}")
         return None
-
 
 @st.cache_data(ttl=30)
 def _load_settings():
