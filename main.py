@@ -10,13 +10,14 @@ import activity1_1, activity1_2, activity1_3
 import activity2_1, activity2_2, activity2_3
 import activity3_1, activity3_2, activity3_3
 import stu_dash
+import config
 
 st.set_page_config(page_title="SMART-LOG 디지털 역사 기록장", layout="wide")
 
 # ============================================================
 # 설정값 (지역명 · 관리자 계정은 secrets.toml에서 관리)
 # ============================================================
-REGION = st.secrets.get("app", {}).get("region", "우리 고장")
+
 ADMIN_ID = st.secrets.get("admin", {}).get("id", "")
 ADMIN_PW = st.secrets.get("admin", {}).get("pw", "")
 PW_SALT = st.secrets.get("admin", {}).get("salt", "smartlog")
@@ -51,6 +52,7 @@ if db_connected:
 # ============================================================
 # 세션 상태 초기화
 # ============================================================
+REGION = config.get_region()
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "username" not in st.session_state: st.session_state.username = ""
 if "role" not in st.session_state: st.session_state.role = ""
