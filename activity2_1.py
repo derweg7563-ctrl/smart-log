@@ -16,7 +16,6 @@ ai_model.configure()
 
 # ---------------------------------------------------------
 # DB 연결
-#  - 연결 실패를 캐시에 남기지 않도록 분리했습니다.
 # ---------------------------------------------------------
 @st.cache_resource
 def _connect():
@@ -209,3 +208,134 @@ def show_page():
         if st.session_state.analysis_result:
             st.info(st.session_state.analysis_result)
             st.caption("🤔 AI의 설명이 항상 맞는 것은 아니에요. 아래 박물관 검색기로 꼭 확인해 보세요!")
+            st.caption("※ AI 분석 제공: Google Gemini")
+
+            guessed = extract_relic_name(st.session_state.analysis_result)
+
+            with st.form("save_act2_1", clear_on_submit=True):
+                st.write("✍️ **AI의 설명을 읽고, 나의 생각을 적어보세요!**")
+
+                relic_name = st.text_input(
+                    "🏷️ 이 물건의 이름",
+                    value=guessed,
+                    help="AI가 알려준 이름이 적혀 있어요. 다르다고 생각하면 직접 고쳐도 좋아요!",
+                )
+                student_thought = st.text_area(
+                    "나의 생각 적기",
+                    placeholder="예: 맷돌의 손잡이 이름이 어처구니라니 신기하다!",
+                )
+
+                if st.form_submit_button("내 발자국(대시보드)에 저장하기 🚀", use_container_width=True):
+                    if not student_thought.strip():
+                        st.warning("⚠️ 나의 생각을 한 줄이라도 적어주세요!")
+                    elif collection is None:
+                        st.error("서버 연결이 잠시 불안정해요. 화면을 새로고침한 뒤 다시 해볼까요? 🙂")
+                    else:
+                        try:
+                            collection.insert_one({
+                                "username": current_student,
+                                "relic_name": relic_name.strip(),
+                                "thought": student_thought.strip(),
+                                "timestamp": datetime.datetime.now(),
+                            })
+                            st.success("🎉 기록이 내 대시보드에 멋지게 저장되었어요!")
+                            st.balloons()
+                        except Exception as e:
+                            print(f"[SAVE ERROR] activity2_1: {e}")
+                            st.error("저장하는 중에 문제가 생겼어요. 다시 한 번 눌러줄래요? 🙂")
+
+    # --- 내가 저장한 기록 ---
+    if collection is not None:
+        try:
+            my_notes = list(collection.find({"username": current_student}).sort("timestamp", -1))
+        except Exception as e:
+            print(f"[DB READ ERROR] activity2_1: {e}")
+            my_notes = []
+
+        if my_notes:
+            with st.expander(f"📚 내가 살펴본 옛 물건 {len(my_notes)}개 다시 보기", expanded=False):
+                for n in my_notes:
+                    name = n.get("relic_name") or "이름을 적지 않았어요"
+                    st.markdown(f"**🏷️ {name}**")
+                    st.write(n.get("thought", ""))
+                    st.markdown("---")
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    # --- 2. 국립중앙박물관 공공데이터 검색기 ---
+    st.markdown("### 🏛️ 2. 국립중앙박물관 공식 유물 검색기")
+    st.info(
+        f"실제 박물관에는 어떤 유물들이 있을까요? "
+        f"궁금한 유물 이름(예: 맷돌, 백자)이나 지역(예: {REGION} 등)을 검색해 보세요!"
+    )
+
+    col_s1, col_s2 = st.columns([3, 1])
+    with col_s1:
+        search_keyword = st.text_input("🔍 유물 검색어 입력", placeholder=f"예: {REGION}, 맷돌, 갓")
+    with col_s2:
+        st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+        search_btn = st.button("박물관 창고 열기 🚀", use_container_width=True)
+
+    if search_btn and search_keyword:
+        with st.spinner("국립중앙박물관 서버에서 자료를 가져오고 있습니다... 🏃‍♂️"):
+            st.session_state.museum_results = search_museum_relics(search_keyword)
+            st.session_state.pop("ai_explanations", None)
+
+    if st.session_state.get("museum_results"):
+        museum_results = st.session_state.museum_results
+
+        if "ai_explanations" not in st.session_state:
+            st.session_state.ai_explanations = {}
+
+        if isinstance(museum_results, dict) and "error" in museum_results:
+            st.error("🚨 박물관 창고 문이 열리지 않았어요!")
+            st.warning(museum_results["error"])
+        elif isinstance(museum_results, dict) and "empty" in museum_results:
+            st.warning(f"'{search_keyword}'에 대한 박물관 검색 결과가 없습니다. 다른 낱말로 찾아볼까요?")
+        else:
+            st.success(f"🎉 총 {len(museum_results)}개의 유물을 박물관에서 찾아왔습니다!")
+
+            for idx, item in enumerate(museum_results):
+                with st.container(border=True):
+                    col_img, col_txt = st.columns([1, 2])
+                    with col_img:
+                        if item["img_uri"]:
+                            st.image(item["img_uri"], use_container_width=True)
+                        else:
+                            st.write("📷 사진 없음")
+                    with col_txt:
+                        st.markdown(f"**🏷️ 유물명:** {item['name']}")
+
+                        if item["desc"] == "설명이 등록되지 않았습니다.":
+                            if idx in st.session_state.ai_explanations:
+                                st.info(f"**🤖 AI 선생님:**\n\n{st.session_state.ai_explanations[idx]}")
+                            else:
+                                st.markdown("📖 **설명:** 박물관 공식 설명이 없습니다.")
+                                if st.button("🤖 AI 선생님, 이게 뭐예요?", key=f"ai_btn_{idx}"):
+                                    with st.spinner("AI가 똑똑한 설명을 뚝딱뚝딱 만들고 있어요... 🪄"):
+                                        st.session_state.ai_explanations[idx] = generate_ai_desc(item["name"])
+                                        st.rerun()
+                        else:
+                            st.markdown(f"**📖 설명:** {item['desc']}")
+
+            st.caption(
+                "※ 유물 사진 및 설명 출처: 국립중앙박물관 e뮤지엄 공공데이터 개방 API "
+                "(공공누리 제1유형) | AI 보충 설명: Google Gemini"
+            )
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # ---------------------------------------------------------
+    # 🤖 3. AI 보조교사 호출
+    # ---------------------------------------------------------
+    activity_desc = (
+        "이 화면은 옛 물건 사진을 올려 구글 AI의 분석을 받고, "
+        "국립중앙박물관 공식 자료를 검색해 비교해 보는 페이지입니다. "
+        "박물관 설명이 없을 경우 AI에게 직접 설명을 요청할 수 있습니다. "
+        "학생은 물건의 이름과 자신의 생각을 적어 저장합니다."
+    )
+    ai_teacher.show_ai_teacher(
+        activity_name="활동 2-1. 옛 물건 살펴보기",
+        context_description=activity_desc,
+    )
