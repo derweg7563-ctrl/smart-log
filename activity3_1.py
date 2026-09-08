@@ -6,11 +6,10 @@ from pymongo import MongoClient
 # 👇 AI 보조교사 · AI 모델 모듈 불러오기
 import ai_teacher
 import ai_model
+import config
 
 ai_model.configure()
 
-# 지역명은 한 곳에서만 관리합니다.
-REGION = st.secrets.get("app", {}).get("region", "우리 고장")
 
 
 # ---------------------------------------------------------
@@ -38,6 +37,7 @@ if db_connected:
 # AI 역사학자
 # ---------------------------------------------------------
 def get_local_story(keyword):
+    REGION = config.get_region()
     prompt = f"""
 너는 {REGION}의 향토 역사를 학생들에게 알려주는 초등학교 선생님이야.
 초등학교 3학년 학생이 '{keyword}'에 대해 검색했어.
@@ -68,6 +68,7 @@ CHECK_OPTIONS = [
 
 
 def show_page():
+    REGION = config.get_region()
     st.markdown("""
         <style>
         div.stButton > button {
