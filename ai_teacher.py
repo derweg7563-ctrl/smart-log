@@ -1,14 +1,13 @@
 import streamlit as st
 import ai_model
-
-# 지역명은 한 곳에서만 관리합니다. (다른 지역 적용 시 이 값만 변경)
-REGION = st.secrets.get("app", {}).get("region", "우리 고장")
+import config
 
 # API 키 설정
 ai_model.configure()
 
 
 def show_ai_teacher(activity_name, context_description):
+    REGION = config.get_region()
     st.markdown("---")
     st.markdown("### 🤖 무엇이든 물어보세요! (AI 보조교사)")
     st.caption("활동을 하다가 어려운 점이 있거나 궁금한 점이 생기면 편하게 질문해 주세요!")
