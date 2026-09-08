@@ -8,6 +8,7 @@
 """
 
 import streamlit as st
+import config
 from pymongo import MongoClient
 
 DEFAULTS = {
