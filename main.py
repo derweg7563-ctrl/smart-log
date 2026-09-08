@@ -52,7 +52,6 @@ if db_connected:
 # ============================================================
 # 세션 상태 초기화
 # ============================================================
-REGION = config.get_region()
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 if "username" not in st.session_state: st.session_state.username = ""
 if "role" not in st.session_state: st.session_state.role = ""
@@ -275,6 +274,7 @@ else:
     st.sidebar.markdown("<span class='menu3-hook'></span>", unsafe_allow_html=True)
     st.sidebar.button("세대공감, 달라진 모습", on_click=toggle_menu, args=(3,), use_container_width=True)
     if st.session_state.menu3_open:
+        REGION = config.get_region()
         st.sidebar.markdown(get_hook("3_1"), unsafe_allow_html=True)
         st.sidebar.button(f"{REGION}의 옛이야기 탐험", on_click=go_to, args=("3_1",), key="btn3_1", use_container_width=True)
         st.sidebar.markdown(get_hook("3_2"), unsafe_allow_html=True)
