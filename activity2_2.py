@@ -74,6 +74,24 @@ def save_question_log(student, question, answer):
 
 
 def show_page():
+    st.markdown("""
+        <style>
+        div.stButton > button, div[data-testid="stFormSubmitButton"] > button {
+            border-radius: 50px !important;
+            padding: 8px 30px !important;
+            min-height: 45px !important;
+            background-color: #ffffff !important;
+            border: 2px solid #FF8080 !important;
+            color: #FF8080 !important;
+            font-size: 1.1rem !important;
+            font-weight: bold !important;
+            transition: all 0.3s ease;
+        }
+        div.stButton > button:hover, div[data-testid="stFormSubmitButton"] > button:hover {
+            background-color: #FF8080 !important; color: #ffffff !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     st.title("🕵️‍♂️ AI 유물 탐정이 되어보기")
     st.subheader("💬 [1단계] 가상현실 박물관을 탐험하고, AI 탐정과 함께 유물의 비밀을 찾아보세요!")
 
