@@ -5,6 +5,7 @@ REGION = st.secrets.get("app", {}).get("region", "우리 고장")
 
 
 def show_page():
+    REGION = config.get_region()
     # 환영 인사와 디자인
     st.markdown(f"""
         <div style='text-align: center; background-color: #F0F8FF; padding: 30px; border-radius: 20px; border: 3px dashed #BAE1FF;'>
