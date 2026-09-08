@@ -1,6 +1,7 @@
 import streamlit as st
 from pymongo import MongoClient
 import stu_dash
+from config import get_setting, save_setting
 
 # ============================================================
 # DB 연결 (실제 접속까지 확인)
@@ -29,41 +30,6 @@ if db_connected:
     old_items_collection = db["act2_1"]                   # 2-1. 옛 물건 살펴보기
     exhibition_collection = db["exhibition_items"]        # 2-3. 애장품 전시회
     local_history_collection = db["local_history"]        # 3-1, 3-2, 3-3 통합
-
-
-# ============================================================
-# 고장 설정 읽기 / 쓰기
-#   - 다른 파일에서도 아래처럼 불러 쓸 수 있습니다.
-#     from teacher_page import get_setting
-#     REGION = get_setting("region", "우리 고장")
-# ============================================================
-DEFAULT_SETTINGS = {
-    "region": "우리 고장",
-    "map_lat": "",
-    "map_lng": "",
-    "archive_url": "",
-}
-
-
-def get_setting(key, default=None):
-    """설정값 하나를 가져옵니다. 없으면 기본값을 돌려줍니다."""
-    if default is None:
-        default = DEFAULT_SETTINGS.get(key, "")
-    if not db_connected:
-        return default
-    try:
-        doc = settings_collection.find_one({"key": key})
-        if doc and doc.get("value"):
-            return doc["value"]
-    except Exception as e:
-        print(f"[SETTING ERROR] {key}: {e}")
-    return default
-
-
-def save_setting(key, value):
-    settings_collection.update_one(
-        {"key": key}, {"$set": {"value": value}}, upsert=True
-    )
 
 
 # ============================================================
