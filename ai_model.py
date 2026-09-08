@@ -6,6 +6,7 @@ AI 모델 설정 공통 모듈
 
 import streamlit as st
 import google.generativeai as genai
+import config
 
 MODEL_CANDIDATES = [
     "gemini-3.1-flash-lite",    # 1순위: 정식 버전, 저렴·빠름, 이미지 입력 지원
