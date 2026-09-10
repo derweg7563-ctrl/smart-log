@@ -114,7 +114,7 @@ def show_page():
     done_count = len(saved_stages)
     st.progress(done_count / 5, text=f"나의 발자국 {done_count} / 5 단계 완성!")
     if done_count < 5:
-        st.info("💡 사진보다는 자신의 그림을 활동지(아래에서 다운로드)에 그린 후 카메라 앱으로 찍어 올리세요. 나중에도 추가할 수 있어요!")
+        st.info("💡 사진보다는 자신의 그림을 활동지(아래에서 다운로드)에 그린 후 카메라 앱으로 찍어 올리세요. 나중에도 추가할 수 있어요!  *저장하기 누르면 아래에 입력 창이 나옵니다.*")
 
     def step_button(key_name, label_key):
         """단계별 저장 버튼. 이미 저장했으면 표시를 바꿔 줍니다."""
